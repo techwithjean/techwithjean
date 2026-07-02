@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import useSWR from "swr"
 import {
   PlayIcon,
@@ -15,6 +15,27 @@ import {
   type ClipCategory,
   type HighlightClip,
 } from "@/lib/highlight-clips"
+import { useFavoriteTeam } from "@/components/favorite-team-context"
+
+/**
+ * Order the reel so the featured ad (self-hosted clip) always leads, followed
+ * by clips featuring the favorite team, then everything else. Order within
+ * each group is preserved so the live feed's recency ordering still holds.
+ */
+function orderClips(
+  clips: HighlightClip[],
+  favorite: string | null,
+): HighlightClip[] {
+  if (!favorite) return clips
+  const rank = (c: HighlightClip) => {
+    if (c.videoSrc) return 0 // featured ad stays first
+    return c.title.toLowerCase().includes(favorite.toLowerCase()) ? 1 : 2
+  }
+  return clips
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i)
+    .map((x) => x.c)
+}
 
 const categoryStyles: Record<ClipCategory, string> = {
   "Goal of the Day": "bg-brand-orange text-white",
@@ -39,7 +60,13 @@ export function VideoHero() {
     refreshInterval: 15 * 60_000,
     revalidateOnFocus: false,
   })
-  const clips = data?.clips?.length ? data.clips : curatedClips
+  const { favorite } = useFavoriteTeam()
+  const rawClips = data?.clips?.length ? data.clips : curatedClips
+  // Surface the favorite team's highlights first (after the featured ad).
+  const clips = useMemo(
+    () => orderClips(rawClips, favorite),
+    [rawClips, favorite],
+  )
 
   const [index, setIndex] = useState(0)
   const [playing, setPlaying] = useState(false)

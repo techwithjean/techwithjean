@@ -6,17 +6,21 @@ import {
   ClockIcon,
   RadioIcon,
   CheckCircle2Icon,
+  HeartIcon,
 } from "lucide-react"
 import { Flag } from "@/components/flag"
 import type { Match, MatchTeam } from "@/lib/tournament-data"
 import { useKickoffTime } from "@/lib/use-kickoff-time"
+import { useFavoriteTeam } from "@/components/favorite-team-context"
 
 function TeamRow({
   side,
   state,
+  favorite,
 }: {
   side: MatchTeam
   state: "win" | "lose" | "neutral"
+  favorite?: boolean
 }) {
   return (
     <div
@@ -35,6 +39,12 @@ function TeamRow({
         >
           {side.team ? side.team.name : "TBD"}
         </span>
+        {favorite && (
+          <HeartIcon
+            className="size-3 shrink-0 fill-brand-green text-brand-green"
+            aria-label="Your favorite team"
+          />
+        )}
       </div>
       <span
         className={cn(
@@ -52,13 +62,19 @@ export function MatchCard({
   match,
   selected,
   predicted,
+  isFavorite,
   onClick,
 }: {
   match: Match
   selected: boolean
   predicted?: boolean
+  isFavorite?: boolean
   onClick: () => void
 }) {
+  const { favorite } = useFavoriteTeam()
+  const aFavorite = !!favorite && match.a.team?.name === favorite
+  const bFavorite = !!favorite && match.b.team?.name === favorite
+
   const aWins =
     match.status === "final" &&
     match.a.score !== null &&
@@ -80,11 +96,13 @@ export function MatchCard({
         "group w-full overflow-hidden rounded-xl bg-card text-left ring-1 transition-all hover:ring-primary/60",
         selected
           ? "ring-2 ring-primary"
-          : match.status === "live"
-            ? "ring-accent/50"
-            : match.status === "delayed"
-              ? "ring-destructive/50"
-              : "ring-border",
+          : isFavorite
+            ? "ring-2 ring-brand-green/60"
+            : match.status === "live"
+              ? "ring-accent/50"
+              : match.status === "delayed"
+                ? "ring-destructive/50"
+                : "ring-border",
       )}
     >
       {/* status strip */}
@@ -129,10 +147,12 @@ export function MatchCard({
         <TeamRow
           side={match.a}
           state={aWins ? "win" : bWins ? "lose" : "neutral"}
+          favorite={aFavorite}
         />
         <TeamRow
           side={match.b}
           state={bWins ? "win" : aWins ? "lose" : "neutral"}
+          favorite={bFavorite}
         />
       </div>
 

@@ -1,5 +1,6 @@
 import "server-only"
 import type { Match, MatchStatus, Round, Team } from "@/lib/tournament-data"
+import { fetchApiFootballBracket } from "@/lib/api-football"
 
 const API_BASE = "https://api.football-data.org/v4"
 const COMPETITION = "WC" // FIFA World Cup
@@ -385,11 +386,36 @@ let cachedBracket: Bracket | null = null
 let cachedAt = 0
 let inFlight: Promise<Bracket> | null = null
 
+// How close to kickoff we start polling on the fast (live) cadence, so a match
+// flipping from upcoming → live is detected promptly instead of being masked by
+// the long idle TTL. Also covers kickoffs that have already passed but that the
+// feed still reports as upcoming (a delayed start).
+const IMMINENT_KICKOFF_MS = 5 * 60_000
+
+/**
+ * Whether the bracket should refresh on the short (live) cadence. True when a
+ * match is already live/delayed, or when any upcoming match's kickoff is within
+ * the imminent window or already past — the moment it goes live we want to catch
+ * it quickly rather than serve the stale idle snapshot for the full idle TTL.
+ */
+function shouldPollFrequently(bracket: Bracket): boolean {
+  if (bracket.hasLiveActivity) return true
+  const now = Date.now()
+  return bracket.rounds.some((r) =>
+    r.matches.some(
+      (m) =>
+        m.status === "upcoming" &&
+        Date.parse(m.kickoffISO) - now < IMMINENT_KICKOFF_MS,
+    ),
+  )
+}
+
 export async function getBracket(): Promise<Bracket> {
   const now = Date.now()
-  const ttl = cachedBracket?.hasLiveActivity
-    ? CACHE_TTL_LIVE_MS
-    : CACHE_TTL_IDLE_MS
+  const ttl =
+    cachedBracket && shouldPollFrequently(cachedBracket)
+      ? CACHE_TTL_LIVE_MS
+      : CACHE_TTL_IDLE_MS
   if (cachedBracket && now - cachedAt < ttl) {
     return cachedBracket
   }
@@ -417,7 +443,25 @@ export async function getBracket(): Promise<Bracket> {
   return inFlight
 }
 
+/**
+ * Fetch the bracket, preferring the low-latency primary provider (API-Football)
+ * and automatically falling back to football-data.org if it fails — missing
+ * key, HTTP/quota error, or an empty knockout set. This keeps the bracket
+ * working (just at higher latency) whenever the primary source is unavailable.
+ */
 async function fetchBracketFresh(): Promise<Bracket> {
+  try {
+    return await fetchApiFootballBracket()
+  } catch (err) {
+    console.log(
+      "[v0] API-Football unavailable, falling back to football-data.org:",
+      (err as Error).message,
+    )
+    return await fetchFromFootballData()
+  }
+}
+
+async function fetchFromFootballData(): Promise<Bracket> {
   const apiKey = process.env.FOOTBALL_DATA_API_KEY
   if (!apiKey) {
     throw new Error("FOOTBALL_DATA_API_KEY is not set")

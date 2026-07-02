@@ -263,27 +263,6 @@ export const rounds: Round[] = [
   final,
 ]
 
-export type LeaderboardEntry = {
-  rank: number
-  username: string
-  points: number
-  avatarHue: number
-  isYou?: boolean
-}
-
-export const leaderboard: LeaderboardEntry[] = [
-  { rank: 1, username: "GoalMachine_Tay", points: 248, avatarHue: 250 },
-  { rank: 2, username: " MidfieldMaestro", points: 235, avatarHue: 47 },
-  { rank: 3, username: "Sofia_Strikes", points: 221, avatarHue: 350 },
-  { rank: 4, username: "you", points: 214, avatarHue: 160, isYou: true },
-  { rank: 5, username: "PitchPerfect_Dev", points: 202, avatarHue: 95 },
-  { rank: 6, username: "Marcus_xG", points: 188, avatarHue: 290 },
-  { rank: 7, username: "TikiTaka_Tom", points: 175, avatarHue: 20 },
-  { rank: 8, username: "KeeperOfChaos", points: 161, avatarHue: 200 },
-]
-
-export const inviteCode = "FINALS-7K3Q"
-
 export type Highlight = {
   id: string
   title: string

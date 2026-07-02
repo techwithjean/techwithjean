@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { BrandLogo } from "@/components/brand-logo"
+import { GoogleSignInButton } from "@/components/google-sign-in-button"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
@@ -73,6 +74,12 @@ function SignUpForm() {
         onSubmit={handleSignUp}
         className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 shadow-xl"
       >
+        <GoogleSignInButton next={next} />
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          or sign up with email
+          <span className="h-px flex-1 bg-border" />
+        </div>
         <div className="grid gap-2">
           <Label htmlFor="username">Display name</Label>
           <Input

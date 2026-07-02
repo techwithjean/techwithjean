@@ -3,8 +3,8 @@
 import { useState } from "react"
 import {
   HeartIcon,
+  HeartHandshakeIcon,
   UserPlusIcon,
-  SparklesIcon,
   MenuIcon,
   LogInIcon,
   LogOutIcon,
@@ -20,7 +20,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { BrandLogo } from "@/components/brand-logo"
 import { Flag } from "@/components/flag"
-import { favoriteTeams } from "@/lib/tournament-data"
+import { favoriteTeams, type Team } from "@/lib/tournament-data"
+import { useFavoriteTeam } from "@/components/favorite-team-context"
 import { signOut } from "@/app/actions/auth"
 import type { AuthUser } from "@/lib/types"
 
@@ -33,20 +34,24 @@ function initials(value: string) {
 
 export function SiteHeader({
   user,
+  teams,
   onInvite,
-  onProUpgrade,
+  onDonate,
 }: {
   user: AuthUser | null
+  teams?: Team[]
   onInvite: () => void
-  onProUpgrade: () => void
+  onDonate: () => void
 }) {
-  const [favorite, setFavorite] = useState<string | null>(null)
+  const { favorite, setFavorite } = useFavoriteTeam()
   const [menuOpen, setMenuOpen] = useState(false)
+  // Prefer the live field passed from the bracket; fall back to the static list.
+  const teamList = teams && teams.length > 0 ? teams : favoriteTeams
 
   const teamControl = (
     <div className="flex items-center gap-2">
       <span className="hidden text-xs font-medium text-muted-foreground lg:inline">
-        <HeartIcon className="-mt-0.5 mr-1 inline size-3.5 text-brand-red" />
+        <HeartIcon className="-mt-0.5 mr-1 inline size-3.5 text-brand-green" />
         Favorite team
       </span>
       <Select value={favorite ?? undefined} onValueChange={(v) => setFavorite(v as string)}>
@@ -54,8 +59,8 @@ export function SiteHeader({
           <SelectValue placeholder="Pick a team to watch" />
         </SelectTrigger>
         <SelectContent className="max-h-72">
-          {favoriteTeams.map((t) => (
-            <SelectItem key={t.code} value={t.name}>
+          {teamList.map((t) => (
+            <SelectItem key={t.name} value={t.name}>
               <span className="flex items-center gap-2">
                 <Flag team={t} className="h-3.5 w-5" />
                 {t.name}
@@ -85,11 +90,11 @@ export function SiteHeader({
           </Button>
           <Button
             size="sm"
-            onClick={onProUpgrade}
+            onClick={onDonate}
             className="bg-gradient-to-r from-brand-red to-brand-orange text-white hover:opacity-90"
           >
-            <SparklesIcon className="size-4" />
-            Pro Upgrade
+            <HeartHandshakeIcon className="size-4" />
+            Donate
           </Button>
           {user ? (
             <div className="flex items-center gap-2">
@@ -153,11 +158,11 @@ export function SiteHeader({
               Invite Friends
             </Button>
             <Button
-              onClick={onProUpgrade}
+              onClick={onDonate}
               className="justify-start bg-gradient-to-r from-brand-red to-brand-orange text-white hover:opacity-90"
             >
-              <SparklesIcon className="size-4" />
-              Pro Upgrade
+              <HeartHandshakeIcon className="size-4" />
+              Donate to kids soccer
             </Button>
             {user ? (
               <form action={signOut}>
