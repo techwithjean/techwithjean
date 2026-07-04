@@ -13,57 +13,26 @@ function matchHasFavorite(m: Match, favorite: string | null) {
 }
 
 /**
- * Priority tier for top-to-bottom ordering (lower sorts first):
- *   0 — the favorite team's match (when one is selected)
- *   1 — live matches
- *   2 — everything else
- */
-function orderTier(m: Match, favorite: string | null) {
-  if (matchHasFavorite(m, favorite)) return 0
-  if (m.status === "live") return 1
-  return 2
-}
-
-/** A match that hasn't been played yet (scheduled or delayed kickoff). */
-function isNotYetPlayed(m: Match) {
-  return m.status === "upcoming" || m.status === "delayed"
-}
-
-/**
  * Order matches top-to-bottom:
- *   1. favorite team's match (if selected)
- *   2. live matches, by whichever kicked off first
- *   3. the rest — not-yet-played matches ordered by soonest kickoff date,
- *      then finished matches ordered by most recently played first.
+ *   1. the favorite team's match (only when a favorite is selected AND it's in
+ *      this bracket/round).
+ *   2. everything else strictly by kickoff date, earliest → latest. Finished
+ *      (FT) matches keep their date slot — they are NOT pushed to the bottom.
  */
 function orderMatches(matches: Match[], favorite: string | null) {
   return matches
     .map((m, i) => ({ m, i }))
     .sort((a, b) => {
-      const ta = orderTier(a.m, favorite)
-      const tb = orderTier(b.m, favorite)
-      if (ta !== tb) return ta - tb
-      // Within the live tier, earliest kickoff (started first) comes first.
-      if (ta === 1) {
-        const diff = Date.parse(a.m.kickoffISO) - Date.parse(b.m.kickoffISO)
-        if (diff !== 0) return diff
-      }
-      // Within the "rest" tier, upcoming matches sort ahead of finished ones,
-      // ordered by soonest kickoff date.
-      if (ta === 2) {
-        const aPending = isNotYetPlayed(a.m)
-        const bPending = isNotYetPlayed(b.m)
-        if (aPending !== bPending) return aPending ? -1 : 1
-        if (aPending && bPending) {
-          // Upcoming: soonest kickoff first.
-          const diff = Date.parse(a.m.kickoffISO) - Date.parse(b.m.kickoffISO)
-          if (diff !== 0) return diff
-        } else {
-          // Finished: most recently played first.
-          const diff = Date.parse(b.m.kickoffISO) - Date.parse(a.m.kickoffISO)
-          if (diff !== 0) return diff
-        }
-      }
+      // Favorite team's match always floats to the top.
+      const aFav = matchHasFavorite(a.m, favorite)
+      const bFav = matchHasFavorite(b.m, favorite)
+      if (aFav !== bFav) return aFav ? -1 : 1
+
+      // Otherwise pure chronological order by kickoff date (soonest first),
+      // regardless of status (upcoming, live, delayed, or finished).
+      const diff = Date.parse(a.m.kickoffISO) - Date.parse(b.m.kickoffISO)
+      if (diff !== 0) return diff
+
       // Stable fallback: preserve the original bracket order.
       return a.i - b.i
     })
