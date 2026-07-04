@@ -14,8 +14,9 @@ export type LeagueMemberRow = {
 }
 
 /**
- * A single row in a league's standings. Points are a placeholder (0) until a
- * scoring system is built; members are ordered by join date for now.
+ * A single row in a league's standings. Points are earned from finished
+ * matches (3 = exact score, 1 = correct outcome) and members are ranked by
+ * points, with earliest join date breaking ties.
  */
 export type StandingEntry = {
   rank: number

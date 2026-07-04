@@ -1,6 +1,8 @@
 import { Dashboard } from "@/components/dashboard"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { getBracket, type Bracket } from "@/lib/football-data"
+import { finalResultsFromBracket, totalPointsByUser } from "@/lib/scoring"
 import type { AuthUser, SavedPrediction } from "@/lib/types"
 import type { LeagueWithStandings, StandingEntry } from "@/lib/leagues"
 
@@ -57,7 +59,10 @@ export default async function Page() {
       }
     }
 
-    leagues = await loadLeagues(supabase, user.id)
+    // Grade every finished match against members' predictions to build real
+    // standings (3 = exact score, 1 = correct outcome).
+    const results = finalResultsFromBracket(initialBracket)
+    leagues = await loadLeagues(supabase, user.id, results)
   }
 
   // Only surface an auto-joined banner during first-login onboarding, when the
@@ -82,6 +87,7 @@ export default async function Page() {
 async function loadLeagues(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
+  results: Map<string, { a: number; b: number }>,
 ): Promise<LeagueWithStandings[]> {
   const { data: memberships } = await supabase
     .from("league_members")
@@ -113,15 +119,39 @@ async function loadLeagues(
     (profileRows ?? []).map((p) => [p.id, p.username as string]),
   )
 
+  // Read every member's predictions to grade standings. RLS restricts the
+  // user-scoped client to its own rows, so use the trusted service-role client
+  // and scope the read explicitly to this set of member ids.
+  const admin = createAdminClient()
+  const { data: predictionRows } = await admin
+    .from("predictions")
+    .select("user_id, match_id, predicted_a, predicted_b")
+    .in("user_id", memberUserIds)
+
+  const pointsByUser = totalPointsByUser(predictionRows ?? [], results)
+
   return (leagueRows ?? []).map((l) => {
     const members: StandingEntry[] = (memberRows ?? [])
       .filter((m) => m.league_id === l.id)
-      .map((m, i) => ({
-        rank: i + 1,
+      .map((m) => ({
         userId: m.user_id,
         username: nameById.get(m.user_id) ?? "player",
-        points: 0, // Placeholder until scoring is implemented.
+        points: pointsByUser.get(m.user_id) ?? 0,
         isYou: m.user_id === userId,
+        joinedAt: m.joined_at as string,
+      }))
+      // Rank by points (highest first); break ties by who joined earliest.
+      .sort(
+        (a, b) =>
+          b.points - a.points ||
+          Date.parse(a.joinedAt) - Date.parse(b.joinedAt),
+      )
+      .map((m, i) => ({
+        rank: i + 1,
+        userId: m.userId,
+        username: m.username,
+        points: m.points,
+        isYou: m.isYou,
       }))
 
     return {
