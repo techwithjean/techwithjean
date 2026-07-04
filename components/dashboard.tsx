@@ -25,6 +25,7 @@ import {
   UserPlusIcon,
   MailIcon,
 } from "lucide-react"
+import { createDonationCheckout } from "@/app/actions/donate"
 import { type Match, type Team } from "@/lib/tournament-data"
 import type { Bracket } from "@/lib/football-data"
 import type { LeagueWithStandings } from "@/lib/leagues"
@@ -57,6 +58,8 @@ export function Dashboard({
     "20",
   )
   const [customAmount, setCustomAmount] = useState("")
+  const [donationPending, setDonationPending] = useState(false)
+  const [donationError, setDonationError] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [inviteEmail, setInviteEmail] = useState("")
@@ -150,6 +153,29 @@ export function Dashboard({
   const donationAmount =
     donationChoice === "other" ? customValue : Number(donationChoice)
   const donationValid = donationAmount > 0
+
+  async function handleDonate() {
+    if (!donationValid || donationPending) return
+    setDonationPending(true)
+    setDonationError(null)
+
+    const result = await createDonationCheckout(donationAmount)
+
+    if (result.error || !result.url) {
+      setDonationError(result.error ?? "Could not start checkout.")
+      setDonationPending(false)
+      return
+    }
+
+    // Stripe's hosted checkout can't render inside the preview iframe, so open
+    // a new tab when embedded; otherwise navigate the current tab.
+    if (typeof window !== "undefined" && window.self !== window.top) {
+      window.open(result.url, "_blank", "noopener,noreferrer")
+      setDonationPending(false)
+    } else {
+      window.location.href = result.url
+    }
+  }
 
   return (
     <FavoriteTeamProvider
@@ -287,14 +313,27 @@ export function Dashboard({
           </div>
 
           <Button
-            disabled={!donationValid}
+            onClick={handleDonate}
+            disabled={!donationValid || donationPending}
             className="w-full bg-gradient-to-r from-brand-red to-brand-orange text-white hover:opacity-90"
           >
             <HeartHandshakeIcon className="size-4" />
-            {donationValid
-              ? `Donate $${donationAmount} to kids soccer`
-              : "Donate to kids soccer"}
+            {donationPending
+              ? "Starting checkout…"
+              : donationValid
+                ? `Donate $${donationAmount} to kids soccer`
+                : "Donate to kids soccer"}
           </Button>
+
+          {donationError && (
+            <p role="alert" className="text-center text-sm text-destructive">
+              {donationError}
+            </p>
+          )}
+
+          <p className="text-center text-xs text-muted-foreground">
+            Secure checkout by Stripe. You can pay by card.
+          </p>
         </DialogContent>
       </Dialog>
 
