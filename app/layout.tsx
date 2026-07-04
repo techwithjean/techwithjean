@@ -1,6 +1,8 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono, Pacifico } from 'next/font/google'
+import { ServiceWorkerRegister } from '@/components/service-worker-register'
+import { InstallPrompt } from '@/components/install-prompt'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -19,6 +21,12 @@ export const metadata: Metadata = {
   description:
     'Predict every match of the 2026 global soccer finals, climb your private leaderboard, and watch the best highlights and bloopers. 10% of Pro proceeds support youth soccer.',
   generator: 'v0.app',
+  applicationName: 'myFinalsCup',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'myFinalsCup',
+  },
   icons: {
     icon: [
       {
@@ -41,6 +49,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: 'dark',
   themeColor: '#0b0f1a',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({
@@ -55,6 +66,8 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased">
         {children}
+        <ServiceWorkerRegister />
+        <InstallPrompt />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
