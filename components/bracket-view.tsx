@@ -12,12 +12,28 @@ function matchHasFavorite(m: Match, favorite: string | null) {
   return m.a.team?.name === favorite || m.b.team?.name === favorite
 }
 
+/** Calendar-day bucket (YYYY-MM-DD) for a match's kickoff. */
+function dayKey(m: Match) {
+  const d = new Date(m.kickoffISO)
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+}
+
+/**
+ * Within a single day, live matches sort above everything else (including
+ * games already played that day). Lower value sorts first.
+ */
+function sameDayTier(m: Match) {
+  return m.status === "live" ? 0 : 1
+}
+
 /**
  * Order matches top-to-bottom:
  *   1. the favorite team's match (only when a favorite is selected AND it's in
  *      this bracket/round).
- *   2. everything else strictly by kickoff date, earliest → latest. Finished
- *      (FT) matches keep their date slot — they are NOT pushed to the bottom.
+ *   2. by calendar day, earliest → latest. Finished (FT) matches keep their
+ *      day slot — they are NOT pushed to the bottom.
+ *   3. within the same day, live matches sort above already-played ones; if
+ *      both are live, the earlier kickoff goes first.
  */
 function orderMatches(matches: Match[], favorite: string | null) {
   return matches
@@ -28,8 +44,15 @@ function orderMatches(matches: Match[], favorite: string | null) {
       const bFav = matchHasFavorite(b.m, favorite)
       if (aFav !== bFav) return aFav ? -1 : 1
 
-      // Otherwise pure chronological order by kickoff date (soonest first),
-      // regardless of status (upcoming, live, delayed, or finished).
+      // Chronological by calendar day, soonest first.
+      const dayDiff = dayKey(a.m) - dayKey(b.m)
+      if (dayDiff !== 0) return dayDiff
+
+      // Same day: live matches rise above already-played ones.
+      const tierDiff = sameDayTier(a.m) - sameDayTier(b.m)
+      if (tierDiff !== 0) return tierDiff
+
+      // Same day and same tier (e.g. both live): earlier kickoff first.
       const diff = Date.parse(a.m.kickoffISO) - Date.parse(b.m.kickoffISO)
       if (diff !== 0) return diff
 
