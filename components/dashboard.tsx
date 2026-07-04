@@ -58,6 +58,7 @@ export function Dashboard({
     "20",
   )
   const [customAmount, setCustomAmount] = useState("")
+  const [donorName, setDonorName] = useState("")
   const [donationPending, setDonationPending] = useState(false)
   const [donationError, setDonationError] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -159,7 +160,12 @@ export function Dashboard({
     setDonationPending(true)
     setDonationError(null)
 
-    const result = await createDonationCheckout(donationAmount)
+    // Only pass a typed name for anonymous donors; signed-in users are linked
+    // by their account.
+    const result = await createDonationCheckout(
+      donationAmount,
+      user ? undefined : donorName,
+    )
 
     if (result.error || !result.url) {
       setDonationError(result.error ?? "Could not start checkout.")
@@ -265,6 +271,29 @@ export function Dashboard({
               </li>
             ))}
           </ul>
+
+          {/* Optional name for donors who aren't signed in */}
+          {!user && (
+            <div className="grid gap-2">
+              <label
+                htmlFor="donor-name"
+                className="text-sm font-medium text-foreground"
+              >
+                Your name{" "}
+                <span className="font-normal text-muted-foreground">
+                  (optional)
+                </span>
+              </label>
+              <Input
+                id="donor-name"
+                type="text"
+                maxLength={80}
+                placeholder="So we can thank you"
+                value={donorName}
+                onChange={(e) => setDonorName(e.target.value)}
+              />
+            </div>
+          )}
 
           {/* Amount picker: $10 / $20 / Other */}
           <div className="grid gap-2">

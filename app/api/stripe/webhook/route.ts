@@ -36,6 +36,12 @@ export async function POST(req: NextRequest) {
       const amountCents = session.amount_total ?? 0
       const foundationShareCents = Math.round(amountCents * FOUNDATION_SHARE)
       const metadataUserId = session.metadata?.user_id
+      // Fall back to Stripe's collected name, then the optional name the donor
+      // typed in our form.
+      const donorName =
+        session.customer_details?.name ||
+        session.metadata?.donor_name ||
+        null
       const paymentIntent =
         typeof session.payment_intent === "string"
           ? session.payment_intent
@@ -48,6 +54,7 @@ export async function POST(req: NextRequest) {
           stripe_session_id: session.id,
           stripe_payment_intent: paymentIntent,
           donor_email: session.customer_details?.email ?? null,
+          donor_name: donorName,
           amount_cents: amountCents,
           foundation_share_cents: foundationShareCents,
           currency: session.currency ?? "usd",

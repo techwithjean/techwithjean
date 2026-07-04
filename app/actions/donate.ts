@@ -13,12 +13,17 @@ type CheckoutResult = { url?: string; error?: string }
 // The amount is validated server-side so it can't be tampered with.
 export async function createDonationCheckout(
   amountDollars: number,
+  donorName?: string,
 ): Promise<CheckoutResult> {
   const amount = Math.round(Number(amountDollars))
 
   if (!Number.isFinite(amount) || amount < MIN_DOLLARS || amount > MAX_DOLLARS) {
     return { error: "Please enter an amount between $1 and $10,000." }
   }
+
+  // Optional display name for anonymous donors. Trim and cap length so it
+  // can't be abused as a large free-text field.
+  const cleanName = (donorName ?? "").trim().slice(0, 80)
 
   // Attribute the donation to the signed-in user when there is one.
   let userId: string | null = null
@@ -63,6 +68,8 @@ export async function createDonationCheckout(
         purpose: "kids_soccer_donation",
         amount_dollars: String(amount),
         user_id: userId ?? "",
+        // Prefer a real signed-in user; fall back to the name they typed.
+        donor_name: cleanName,
       },
       success_url: `${origin}/donate/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/`,
