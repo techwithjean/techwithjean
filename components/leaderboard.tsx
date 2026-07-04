@@ -58,8 +58,9 @@ export function Leaderboard({
   }
 
   /**
-   * Open the user's email client with a pre-filled invite. Uses mailto so no
-   * email service/keys are required — the message is sent from their own inbox.
+   * Open a pre-filled invite email. Opens Gmail's web compose in a new tab
+   * (reliable in-browser, no email service/keys needed). Falls back to the
+   * OS mail handler via mailto if the popup is blocked.
    */
   function inviteByEmail(leagueName: string, code: string) {
     const to = inviteEmail.trim()
@@ -72,9 +73,21 @@ export function Leaderboard({
       "",
       `Or enter the invite code manually: ${code}`,
     ].join("\n")
-    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(
-      subject,
-    )}&body=${encodeURIComponent(body)}`
+
+    const gmailUrl =
+      `https://mail.google.com/mail/?view=cm&fs=1` +
+      `&to=${encodeURIComponent(to)}` +
+      `&su=${encodeURIComponent(subject)}` +
+      `&body=${encodeURIComponent(body)}`
+
+    // Prefer Gmail compose in a new tab; if the browser blocks it, fall back
+    // to the user's default mail client.
+    const opened = window.open(gmailUrl, "_blank", "noopener,noreferrer")
+    if (!opened) {
+      window.location.href =
+        `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}` +
+        `&body=${encodeURIComponent(body)}`
+    }
   }
 
   // Signed-out or no leagues yet → prompt to create/join.
