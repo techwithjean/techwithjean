@@ -98,11 +98,13 @@ export function MatchCard({
           ? "ring-2 ring-primary"
           : isFavorite
             ? "ring-2 ring-brand-green/60"
-            : match.status === "live"
-              ? "ring-accent/50"
-              : match.status === "delayed"
-                ? "ring-destructive/50"
-                : "ring-border",
+            : predicted
+              ? "ring-2 ring-brand-green/60"
+              : match.status === "live"
+                ? "ring-accent/50"
+                : match.status === "delayed"
+                  ? "ring-destructive/50"
+                  : "ring-border",
       )}
     >
       {/* status strip */}
@@ -114,7 +116,7 @@ export function MatchCard({
         </span>
         <span className="flex items-center gap-2">
           {predicted && (
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-primary">
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-brand-green">
               <CheckCircle2Icon className="size-3" />
               Predicted
             </span>
