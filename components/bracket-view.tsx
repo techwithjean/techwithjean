@@ -67,6 +67,7 @@ export function BracketView({
   selectedId,
   onSelectMatch,
   predictedIds,
+  correctIds,
   isLive,
   isDelayed,
 }: {
@@ -74,6 +75,7 @@ export function BracketView({
   selectedId: string | null
   onSelectMatch: (m: Match) => void
   predictedIds: Set<string>
+  correctIds: Set<string>
   isLive?: boolean
   isDelayed?: boolean
 }) {
@@ -151,6 +153,7 @@ export function BracketView({
             match={m}
             selected={selectedId === m.id}
             predicted={predictedIds.has(m.id)}
+            correct={correctIds.has(m.id)}
             isFavorite={matchHasFavorite(m, favorite)}
             onClick={() => onSelectMatch(m)}
           />
@@ -183,6 +186,7 @@ export function BracketView({
                   match={m}
                   selected={selectedId === m.id}
                   predicted={predictedIds.has(m.id)}
+                  correct={correctIds.has(m.id)}
                   isFavorite={matchHasFavorite(m, favorite)}
                   onClick={() => onSelectMatch(m)}
                 />

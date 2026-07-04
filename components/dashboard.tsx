@@ -26,6 +26,7 @@ import {
   MailIcon,
 } from "lucide-react"
 import { createDonationCheckout } from "@/app/actions/donate"
+import { scorePrediction } from "@/lib/scoring"
 import { type Match, type Team } from "@/lib/tournament-data"
 import type { Bracket } from "@/lib/football-data"
 import type { LeagueWithStandings } from "@/lib/leagues"
@@ -96,6 +97,22 @@ export function Dashboard({
   })()
   const isLive = allMatches.some((m) => m.status === "live")
   const isDelayed = allMatches.some((m) => m.status === "delayed")
+
+  // A prediction counts as "correct" once the match is final and it earns
+  // points (right outcome or exact score). These get the blue border.
+  const correctIds = new Set<string>()
+  for (const m of allMatches) {
+    const pred = predictions[m.id]
+    if (
+      pred &&
+      m.status === "final" &&
+      m.a.score != null &&
+      m.b.score != null &&
+      scorePrediction(pred, { a: m.a.score, b: m.b.score }) > 0
+    ) {
+      correctIds.add(m.id)
+    }
+  }
 
   useEffect(() => {
     setBaseTime(Date.now())
@@ -205,6 +222,7 @@ export function Dashboard({
             selectedId={selectedId}
             onSelectMatch={selectMatch}
             predictedIds={new Set(Object.keys(predictions))}
+            correctIds={correctIds}
             isLive={isLive}
             isDelayed={isDelayed}
           />

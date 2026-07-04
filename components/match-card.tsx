@@ -62,12 +62,14 @@ export function MatchCard({
   match,
   selected,
   predicted,
+  correct,
   isFavorite,
   onClick,
 }: {
   match: Match
   selected: boolean
   predicted?: boolean
+  correct?: boolean
   isFavorite?: boolean
   onClick: () => void
 }) {
@@ -96,9 +98,9 @@ export function MatchCard({
         "group w-full overflow-hidden rounded-xl bg-card text-left ring-1 transition-all hover:ring-primary/60",
         selected
           ? "ring-2 ring-primary"
-          : isFavorite
-            ? "ring-2 ring-brand-green/60"
-            : predicted
+          : correct
+            ? "ring-2 ring-primary"
+            : isFavorite
               ? "ring-2 ring-brand-green/60"
               : match.status === "live"
                 ? "ring-accent/50"
@@ -116,7 +118,7 @@ export function MatchCard({
         </span>
         <span className="flex items-center gap-2">
           {predicted && (
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-brand-green">
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-primary">
               <CheckCircle2Icon className="size-3" />
               Predicted
             </span>
@@ -137,7 +139,7 @@ export function MatchCard({
             </span>
           ) : (
             !predicted && (
-              <span className="text-[11px] font-medium text-primary">
+              <span className="text-[11px] font-semibold text-brand-orange">
                 Predict
               </span>
             )
