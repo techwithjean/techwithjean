@@ -88,6 +88,7 @@ export function SiteHeader({
             <UserPlusIcon className="size-4" />
             Invite Friends
           </Button>
+          {/* Donate temporarily hidden until Stripe donations are activated.
           <Button
             size="sm"
             onClick={onDonate}
@@ -96,6 +97,7 @@ export function SiteHeader({
             <HeartHandshakeIcon className="size-4" />
             Donate
           </Button>
+          */}
           {user ? (
             <div className="flex items-center gap-2">
               <Avatar className="size-9 ring-1 ring-border">
@@ -157,6 +159,7 @@ export function SiteHeader({
               <UserPlusIcon className="size-4" />
               Invite Friends
             </Button>
+            {/* Donate temporarily hidden until Stripe donations are activated.
             <Button
               onClick={onDonate}
               className="justify-start bg-gradient-to-r from-brand-red to-brand-orange text-white hover:opacity-90"
@@ -164,6 +167,7 @@ export function SiteHeader({
               <HeartHandshakeIcon className="size-4" />
               Donate to kids soccer
             </Button>
+            */}
             {user ? (
               <form action={signOut}>
                 <Button

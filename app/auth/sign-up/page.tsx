@@ -74,12 +74,14 @@ function SignUpForm() {
         onSubmit={handleSignUp}
         className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 shadow-xl"
       >
+        {/* Google sign-in temporarily hidden until OAuth is configured.
         <GoogleSignInButton next={next} />
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="h-px flex-1 bg-border" />
           or sign up with email
           <span className="h-px flex-1 bg-border" />
         </div>
+        */}
         <div className="grid gap-2">
           <Label htmlFor="username">Display name</Label>
           <Input
