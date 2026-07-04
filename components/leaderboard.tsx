@@ -20,6 +20,7 @@ import {
   UsersIcon,
   TrophyIcon,
   PlusIcon,
+  MailIcon,
 } from "lucide-react"
 import { createLeague, joinLeagueByCode } from "@/app/actions/leagues"
 import type { LeagueWithStandings } from "@/lib/leagues"
@@ -43,6 +44,7 @@ export function Leaderboard({
     leagues[0]?.id ?? null,
   )
   const [copied, setCopied] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState("")
 
   const selected =
     leagues.find((l) => l.id === selectedId) ?? leagues[0] ?? null
@@ -53,6 +55,26 @@ export function Leaderboard({
       .catch(() => {})
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  /**
+   * Open the user's email client with a pre-filled invite. Uses mailto so no
+   * email service/keys are required — the message is sent from their own inbox.
+   */
+  function inviteByEmail(leagueName: string, code: string) {
+    const to = inviteEmail.trim()
+    const joinUrl = `https://myfinalscup.com/join/${code}`
+    const subject = `Join my "${leagueName}" bracket league on myFinalsCup`
+    const body = [
+      `You're invited to join "${leagueName}" on myFinalsCup!`,
+      "",
+      `Tap this link to join instantly: ${joinUrl}`,
+      "",
+      `Or enter the invite code manually: ${code}`,
+    ].join("\n")
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(
+      subject,
+    )}&body=${encodeURIComponent(body)}`
   }
 
   // Signed-out or no leagues yet → prompt to create/join.
@@ -79,7 +101,15 @@ export function Leaderboard({
                 onValueChange={(v) => v && setSelectedId(v)}
               >
                 <SelectTrigger className="h-auto border-0 p-0 font-heading text-base font-bold shadow-none focus-visible:ring-0">
-                  <SelectValue />
+                  {/*
+                    Base UI's <SelectValue> renders the raw value (the league
+                    id) unless we map it to a label. Show the league name.
+                  */}
+                  <SelectValue>
+                    {(value: string) =>
+                      leagues.find((l) => l.id === value)?.name ?? selected.name
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {leagues.map((l) => (
@@ -155,7 +185,10 @@ export function Leaderboard({
       </ul>
 
       <div className="mt-4 rounded-lg border border-dashed border-border bg-secondary/40 p-3">
-        <p className="text-xs text-muted-foreground">Invite code</p>
+        <p className="text-xs text-muted-foreground">
+          Invite code for{" "}
+          <span className="font-medium text-foreground">{selected.name}</span>
+        </p>
         <div className="mt-1 flex items-center gap-2">
           <code className="flex-1 rounded-md bg-background px-2.5 py-1.5 font-mono text-sm font-semibold text-foreground ring-1 ring-border">
             {selected.inviteCode}
@@ -178,6 +211,37 @@ export function Leaderboard({
             )}
           </Button>
         </div>
+
+        {/* Invite by email — opens the user's mail app with a prefilled note. */}
+        <form
+          className="mt-3 border-t border-dashed border-border pt-3"
+          onSubmit={(e) => {
+            e.preventDefault()
+            inviteByEmail(selected.name, selected.inviteCode)
+          }}
+        >
+          <label
+            htmlFor="invite-email"
+            className="text-xs text-muted-foreground"
+          >
+            Invite someone by email
+          </label>
+          <div className="mt-1 flex items-center gap-2">
+            <Input
+              id="invite-email"
+              type="email"
+              required
+              placeholder="friend@example.com"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className="flex-1"
+            />
+            <Button type="submit" size="sm" variant="secondary">
+              <MailIcon className="size-4" />
+              Send Invite
+            </Button>
+          </div>
+        </form>
       </div>
 
       {isAuthed && (
