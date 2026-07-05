@@ -1,8 +1,10 @@
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono, Pacifico } from 'next/font/google'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { InstallPrompt } from '@/components/install-prompt'
+import { VisitTracker } from '@/components/visit-tracker'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -69,6 +71,8 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <InstallPrompt />
         {process.env.NODE_ENV === 'production' && <Analytics />}
+        {process.env.NODE_ENV === 'production' && <SpeedInsights />}
+        {process.env.NODE_ENV === 'production' && <VisitTracker />}
       </body>
     </html>
   )
