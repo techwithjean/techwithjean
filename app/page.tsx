@@ -1,5 +1,6 @@
 import { Dashboard } from "@/components/dashboard"
-import { LandingPage } from "@/components/marketing/landing-page"
+import { MarketingSections } from "@/components/marketing/marketing-sections"
+import { MarketingFooter } from "@/components/marketing/marketing-footer"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getBracket, type Bracket } from "@/lib/football-data"
@@ -16,13 +17,7 @@ export default async function Page() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Smart homepage: logged-out visitors get the public, crawlable marketing
-  // landing page (best for SEO); signed-in users get the app dashboard exactly
-  // as before. This keeps the app experience unchanged for existing users.
-  if (!user) {
-    return <LandingPage />
-  }
-
+  // The live bracket is public — everyone can view it, signed in or not.
   let initialBracket: Bracket = {
     rounds: [],
     updatedAt: "",
@@ -32,6 +27,31 @@ export default async function Page() {
     initialBracket = await getBracket()
   } catch (err) {
     console.log("[v0] Failed to load bracket:", (err as Error).message)
+  }
+
+  // Logged-out visitors get the full app up top (bracket viewable, sign-in is
+  // optional) with the public, crawlable marketing + blog content below it.
+  // Signing in stays optional until they decide to save predictions or join a
+  // league.
+  if (!user) {
+    return (
+      <Dashboard
+        user={null}
+        isAdmin={false}
+        initialPredictions={{}}
+        initialBracket={initialBracket}
+        initialFavorite={null}
+        leagues={[]}
+        needsOnboarding={false}
+        autoJoinedLeagueName={null}
+        belowContent={
+          <>
+            <MarketingSections />
+            <MarketingFooter />
+          </>
+        }
+      />
+    )
   }
 
   let authUser: AuthUser | null = null

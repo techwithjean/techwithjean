@@ -43,6 +43,7 @@ export function Dashboard({
   leagues = [],
   needsOnboarding = false,
   autoJoinedLeagueName = null,
+  belowContent = null,
 }: {
   user: AuthUser | null
   isAdmin?: boolean
@@ -52,6 +53,12 @@ export function Dashboard({
   leagues?: LeagueWithStandings[]
   needsOnboarding?: boolean
   autoJoinedLeagueName?: string | null
+  /**
+   * Optional content rendered directly below the app (used to show the public
+   * marketing/landing sections beneath the live bracket for logged-out
+   * visitors). When provided, it replaces the default minimal footer.
+   */
+  belowContent?: React.ReactNode
 }) {
   const [baseTime, setBaseTime] = useState(0)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -235,12 +242,16 @@ export function Dashboard({
         </div>
       </main>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto max-w-7xl px-4 py-6 text-center text-xs text-muted-foreground sm:px-6">
-          myFinalsCup.com · Built for the 2026 global finals. 20% of every
-          donation supports the U.S. Soccer Foundation.
-        </div>
-      </footer>
+      {belowContent}
+
+      {!belowContent && (
+        <footer className="border-t border-border">
+          <div className="mx-auto max-w-7xl px-4 py-6 text-center text-xs text-muted-foreground sm:px-6">
+            myFinalsCup.com · Built for the 2026 global finals. 20% of every
+            donation supports the U.S. Soccer Foundation.
+          </div>
+        </footer>
+      )}
 
       <PredictionCard
         match={selectedMatch}
