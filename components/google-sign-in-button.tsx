@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { getAuthCallbackUrl } from "@/lib/auth-redirect"
 import { Button } from "@/components/ui/button"
 
 /**
@@ -21,9 +22,7 @@ export function GoogleSignInButton({ next = "/" }: { next?: string }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo:
-            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
-            `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          redirectTo: getAuthCallbackUrl(next),
         },
       })
       if (error) throw error

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { BrandLogo } from "@/components/brand-logo"
+import { getAuthCallbackUrl } from "@/lib/auth-redirect"
 import { MailCheckIcon } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
@@ -26,12 +27,7 @@ export default function Page() {
     try {
       // Route the recovery link through the callback, which exchanges the code
       // for a session and then forwards to the update-password page.
-      const base =
-        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
-        `${window.location.origin}/auth/callback`
-      const redirectTo = `${base}${base.includes("?") ? "&" : "?"}next=${encodeURIComponent(
-        "/auth/update-password",
-      )}`
+      const redirectTo = getAuthCallbackUrl("/auth/update-password")
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo,

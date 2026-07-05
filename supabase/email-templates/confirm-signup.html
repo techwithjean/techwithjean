@@ -1,0 +1,107 @@
+<!--
+  myFinalsCup — Confirm signup email template
+  Paste this into: Supabase Dashboard -> Authentication -> Emails -> "Confirm signup"
+  Supabase will replace {{ .ConfirmationURL }} with the real confirmation link.
+  Email clients require table-based layout + inline styles, so this intentionally
+  does NOT use the app's Tailwind classes. Brand hex values are approximated from
+  the app's oklch design tokens.
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="supported-color-schemes" content="dark" />
+    <title>Confirm your myFinalsCup account</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#0f1220; color:#f5f7fa; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <!-- Preheader (hidden preview text shown in the inbox list) -->
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+      Confirm your email to start filling out your 2026 finals bracket on myFinalsCup.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f1220;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; background-color:#1a1e2b; border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden;">
+
+            <!-- Brand header -->
+            <tr>
+              <td align="center" style="padding:28px 24px 8px 24px;">
+                <div style="font-size:26px; font-weight:800; letter-spacing:-0.5px;">
+                  <span style="color:#f4c542;">my</span><span style="color:#ef7a3c;">finals</span><span style="color:#4f8ef7;">cup</span>
+                </div>
+                <div style="height:3px; width:56px; margin:12px auto 0 auto; background:linear-gradient(90deg,#e2382c,#ef8a3c); border-radius:999px;"></div>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding:20px 32px 8px 32px;">
+                <h1 style="margin:0 0 12px 0; font-size:22px; line-height:1.3; color:#ffffff; font-weight:700;">
+                  Confirm your email to get in the game
+                </h1>
+                <p style="margin:0 0 20px 0; font-size:15px; line-height:1.6; color:#c3c9d6;">
+                  Welcome to <strong style="color:#ffffff;">myFinalsCup</strong> — the place to predict the 2026 global
+                  finals and go head-to-head with your friends. Tap the button below to
+                  confirm your email and start filling out your bracket.
+                </p>
+              </td>
+            </tr>
+
+            <!-- CTA button -->
+            <tr>
+              <td align="center" style="padding:8px 32px 8px 32px;">
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center" style="border-radius:10px; background-color:#4f8ef7;">
+                      <a href="{{ .ConfirmationURL }}"
+                        style="display:inline-block; padding:14px 30px; font-size:16px; font-weight:700; color:#ffffff; text-decoration:none; border-radius:10px;">
+                        Confirm my email
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Fallback link -->
+            <tr>
+              <td style="padding:20px 32px 8px 32px;">
+                <p style="margin:0 0 6px 0; font-size:13px; line-height:1.6; color:#9aa1b0;">
+                  If the button doesn't work, copy and paste this link into your browser:
+                </p>
+                <p style="margin:0; font-size:13px; line-height:1.6; word-break:break-all;">
+                  <a href="{{ .ConfirmationURL }}" style="color:#4f8ef7; text-decoration:underline;">{{ .ConfirmationURL }}</a>
+                </p>
+              </td>
+            </tr>
+
+            <!-- Divider -->
+            <tr>
+              <td style="padding:20px 32px 0 32px;">
+                <div style="height:1px; background-color:rgba(255,255,255,0.08);"></div>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:16px 32px 28px 32px;">
+                <p style="margin:0 0 6px 0; font-size:12px; line-height:1.6; color:#8b92a1;">
+                  You're receiving this email because someone signed up for
+                  <a href="https://www.myfinalscup.com" style="color:#9aa1b0; text-decoration:underline;">myfinalscup.com</a>
+                  using this address. If this wasn't you, you can safely ignore this email.
+                </p>
+                <p style="margin:0; font-size:12px; line-height:1.6; color:#8b92a1;">
+                  myFinalsCup &middot; 20% of every donation supports the U.S. Soccer Foundation.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

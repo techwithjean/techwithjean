@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { BrandLogo } from "@/components/brand-logo"
 import { GoogleSignInButton } from "@/components/google-sign-in-button"
+import { getAuthCallbackUrl } from "@/lib/auth-redirect"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
@@ -40,9 +41,7 @@ function SignUpForm() {
         email,
         password,
         options: {
-          emailRedirectTo:
-            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
-            `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          emailRedirectTo: getAuthCallbackUrl(next),
           data: {
             username: username || email.split("@")[0],
           },
