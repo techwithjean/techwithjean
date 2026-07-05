@@ -21,6 +21,12 @@ export default function Page() {
             We sent you a confirmation link. Click it to verify your account,
             then log in to start making your bracket predictions.
           </p>
+          <p className="rounded-lg bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground text-pretty">
+            The email is sent by our secure email provider (Supabase) on behalf
+            of{" "}
+            <span className="font-medium text-foreground">myfinalscup.com</span>.
+            If you don&apos;t see it, check your spam folder.
+          </p>
           <Button
             render={<Link href="/auth/login" />}
             nativeButton={false}

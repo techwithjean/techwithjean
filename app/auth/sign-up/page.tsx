@@ -126,6 +126,13 @@ function SignUpForm() {
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Creating account..." : "Sign up"}
         </Button>
+        <p className="rounded-lg bg-muted/50 p-3 text-center text-xs leading-relaxed text-muted-foreground">
+          After you sign up, we&apos;ll send a confirmation link to your email to
+          verify your account. It comes from our secure email provider (Supabase)
+          on behalf of{" "}
+          <span className="font-medium text-foreground">myfinalscup.com</span> —
+          check your inbox (and spam folder) to finish signing up.
+        </p>
         <p className="text-center text-sm text-muted-foreground">
           {"Already have an account? "}
           <Link
