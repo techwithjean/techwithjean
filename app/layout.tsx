@@ -18,16 +18,79 @@ const pacifico = Pacifico({
   subsets: ['latin'],
 })
 
+const siteUrl = 'https://www.myfinalscup.com'
+const siteTitle = 'myFinalsCup.com — 2026 Finals Bracket Challenge'
+const siteDescription =
+  'Predict every match of the 2026 global soccer finals, climb your private leaderboard, and watch the best highlights and bloopers. 10% of Pro proceeds support youth soccer.'
+
 export const metadata: Metadata = {
-  title: 'myFinalsCup.com — 2026 Finals Bracket Challenge',
-  description:
-    'Predict every match of the 2026 global soccer finals, climb your private leaderboard, and watch the best highlights and bloopers. 10% of Pro proceeds support youth soccer.',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: siteTitle,
+    template: '%s · myFinalsCup',
+  },
+  description: siteDescription,
   generator: 'v0.app',
   applicationName: 'myFinalsCup',
+  keywords: [
+    '2026 finals bracket',
+    'soccer prediction game',
+    'World Cup bracket challenge',
+    'football prediction league',
+    'soccer bracket predictor',
+    'finals leaderboard',
+    'private prediction league',
+    'World Cup 2026 predictions',
+    'soccer pick em',
+    'myFinalsCup',
+  ],
+  authors: [{ name: 'myFinalsCup' }],
+  creator: 'myFinalsCup',
+  publisher: 'myFinalsCup',
+  category: 'sports',
+  alternates: {
+    canonical: '/',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'myFinalsCup',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'myFinalsCup',
+    title: siteTitle,
+    description: siteDescription,
+    url: siteUrl,
+    locale: 'en_US',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'myFinalsCup.com — Predict the 2026 Finals and climb the leaderboard',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: siteTitle,
+    description: siteDescription,
+    images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
   },
   icons: {
     icon: [
@@ -67,6 +130,44 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} bg-background`}
     >
       <body className="font-sans antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@graph': [
+                {
+                  '@type': 'WebSite',
+                  '@id': `${siteUrl}/#website`,
+                  url: siteUrl,
+                  name: 'myFinalsCup',
+                  description: siteDescription,
+                  inLanguage: 'en-US',
+                },
+                {
+                  '@type': 'Organization',
+                  '@id': `${siteUrl}/#organization`,
+                  name: 'myFinalsCup',
+                  url: siteUrl,
+                  logo: `${siteUrl}/icon-512.png`,
+                },
+                {
+                  '@type': 'WebApplication',
+                  name: 'myFinalsCup',
+                  url: siteUrl,
+                  applicationCategory: 'SportsApplication',
+                  operatingSystem: 'Web',
+                  description: siteDescription,
+                  offers: {
+                    '@type': 'Offer',
+                    price: '0',
+                    priceCurrency: 'USD',
+                  },
+                },
+              ],
+            }),
+          }}
+        />
         {children}
         <ServiceWorkerRegister />
         <InstallPrompt />
