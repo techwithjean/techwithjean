@@ -21,8 +21,15 @@ import {
   TrophyIcon,
   PlusIcon,
   MailIcon,
+  PencilIcon,
+  LogOutIcon,
 } from "lucide-react"
-import { createLeague, joinLeagueByCode } from "@/app/actions/leagues"
+import {
+  createLeague,
+  joinLeagueByCode,
+  leaveLeague,
+} from "@/app/actions/leagues"
+import { updateDisplayName } from "@/app/actions/profile"
 import type { LeagueWithStandings } from "@/lib/leagues"
 
 /** Deterministic avatar hue from a string so colors are stable per user. */
@@ -46,8 +53,48 @@ export function Leaderboard({
   const [copied, setCopied] = useState(false)
   const [inviteEmail, setInviteEmail] = useState("")
 
+  // Display-name editing (global profile name shown across leagues).
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState("")
+  const [nameBusy, setNameBusy] = useState(false)
+  const [nameError, setNameError] = useState<string | null>(null)
+
+  // Leave-league confirmation flow.
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const [leaveBusy, setLeaveBusy] = useState(false)
+  const [leaveError, setLeaveError] = useState<string | null>(null)
+
   const selected =
     leagues.find((l) => l.id === selectedId) ?? leagues[0] ?? null
+
+  const you = selected?.members.find((m) => m.isYou) ?? null
+
+  async function saveName() {
+    setNameBusy(true)
+    setNameError(null)
+    const res = await updateDisplayName(nameDraft)
+    setNameBusy(false)
+    if (!res.ok) {
+      setNameError(res.error)
+      return
+    }
+    setEditingName(false)
+    router.refresh()
+  }
+
+  async function doLeaveLeague(leagueId: string) {
+    setLeaveBusy(true)
+    setLeaveError(null)
+    const res = await leaveLeague(leagueId)
+    setLeaveBusy(false)
+    if (!res.ok) {
+      setLeaveError(res.error)
+      return
+    }
+    setConfirmLeave(false)
+    setSelectedId(null)
+    router.refresh()
+  }
 
   function copyCode(code: string) {
     navigator.clipboard
@@ -258,12 +305,117 @@ export function Leaderboard({
       </div>
 
       {isAuthed && (
-        <div className="mt-3">
-          <LeagueEmptyState
-            compact
-            isAuthed={isAuthed}
-            onChanged={() => router.refresh()}
-          />
+        <div className="mt-4 flex flex-col gap-2 border-t border-border pt-3">
+          {/* Edit display name (updates your name across every league). */}
+          {editingName ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                saveName()
+              }}
+              className="flex flex-col gap-2"
+            >
+              <label
+                htmlFor="display-name"
+                className="text-xs text-muted-foreground"
+              >
+                Your display name
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="display-name"
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  maxLength={40}
+                  placeholder="Your name"
+                  autoFocus
+                  className="flex-1"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={nameBusy || !nameDraft.trim()}
+                >
+                  {nameBusy ? "Saving..." : "Save"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setEditingName(false)}
+                  disabled={nameBusy}
+                >
+                  Cancel
+                </Button>
+              </div>
+              {nameError && (
+                <p className="text-xs text-destructive">{nameError}</p>
+              )}
+            </form>
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setNameDraft(you?.username?.trim() ?? "")
+                  setNameError(null)
+                  setEditingName(true)
+                }}
+                className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <PencilIcon className="size-3.5" />
+                Edit display name
+              </button>
+
+              {/* Leave league with an inline confirm step. */}
+              {confirmLeave ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Leave?</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => doLeaveLeague(selected.id)}
+                    disabled={leaveBusy}
+                  >
+                    {leaveBusy ? "Leaving..." : "Confirm"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setConfirmLeave(false)}
+                    disabled={leaveBusy}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLeaveError(null)
+                    setConfirmLeave(true)
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-medium text-destructive hover:opacity-80"
+                >
+                  <LogOutIcon className="size-3.5" />
+                  Leave league
+                </button>
+              )}
+            </div>
+          )}
+          {leaveError && (
+            <p className="text-xs text-destructive">{leaveError}</p>
+          )}
+
+          <div className="mt-1">
+            <LeagueEmptyState
+              compact
+              isAuthed={isAuthed}
+              onChanged={() => router.refresh()}
+            />
+          </div>
         </div>
       )}
     </section>

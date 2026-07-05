@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import {
   generateInviteCode,
   normalizeInviteCode,
@@ -104,6 +105,65 @@ export async function joinLeagueByCode(
 
   revalidatePath("/")
   return { ok: true, data: mapLeagueRow(data) }
+}
+
+/**
+ * Remove the current user from a league. If the departing user is the owner,
+ * ownership transfers to the earliest-joined remaining member; if no members
+ * remain, the league is deleted. Membership/ownership writes use the trusted
+ * admin client, always scoped to the authenticated user's id.
+ */
+export async function leaveLeague(
+  leagueId: string,
+): Promise<ActionResult> {
+  if (!leagueId) return { ok: false, error: "Missing league." }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: "You must be signed in." }
+
+  const admin = createAdminClient()
+
+  // Confirm the league exists and whether this user owns it.
+  const { data: league } = await admin
+    .from("leagues")
+    .select("id, owner_id")
+    .eq("id", leagueId)
+    .maybeSingle()
+  if (!league) return { ok: false, error: "League not found." }
+
+  // Remove this user's membership (scoped to their id).
+  const { error: delError } = await admin
+    .from("league_members")
+    .delete()
+    .eq("league_id", leagueId)
+    .eq("user_id", user.id)
+  if (delError) return { ok: false, error: "Could not leave the league." }
+
+  // If the owner left, hand off ownership or clean up an empty league.
+  if (league.owner_id === user.id) {
+    const { data: remaining } = await admin
+      .from("league_members")
+      .select("user_id")
+      .eq("league_id", leagueId)
+      .order("joined_at", { ascending: true })
+      .limit(1)
+
+    if (remaining && remaining.length > 0) {
+      await admin
+        .from("leagues")
+        .update({ owner_id: remaining[0].user_id })
+        .eq("id", leagueId)
+    } else {
+      // No members left — delete the now-empty league.
+      await admin.from("leagues").delete().eq("id", leagueId)
+    }
+  }
+
+  revalidatePath("/")
+  return { ok: true }
 }
 
 /**
