@@ -1,5 +1,20 @@
 # myFinalsCup — Follow-ups (do later)
 
+## 0. MANUAL: Fix Supabase Site URL (URGENT — blocks new signups)
+Confirmation links currently point to `localhost:3000` for new users because the
+Supabase project's Site URL is still the dev default.
+- [ ] Supabase Dashboard -> Authentication -> URL Configuration
+      - Site URL: `https://www.myfinalscup.com`
+      - Redirect URLs (allow-list): add `https://www.myfinalscup.com/**`
+
+## 0b. MANUAL: Paste branded email templates into Supabase
+Dashboard-only step (can't be done from code). Copy each HTML file's contents:
+- [ ] Confirm signup -> paste `supabase/email-templates/confirm-signup.html`
+- [ ] Reset password -> paste `supabase/email-templates/reset-password.html`
+- [ ] Magic link     -> paste `supabase/email-templates/magic-link.html`
+At: Supabase Dashboard -> Authentication -> Emails -> (matching template).
+Set subjects too, e.g. "Confirm your myFinalsCup account".
+
 ## 1. Custom SMTP so auth emails come from myFinalsCup (Resend)
 Goal: emails should be sent from `no-reply@myfinalscup.com` with the sender name
 "myFinalsCup" instead of the default "Supabase Auth" / `@supabase.io` address.
