@@ -8,6 +8,7 @@ import {
   MenuIcon,
   LogInIcon,
   LogOutIcon,
+  BarChart3Icon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -34,11 +35,13 @@ function initials(value: string) {
 
 export function SiteHeader({
   user,
+  isAdmin = false,
   teams,
   onInvite,
   onDonate,
 }: {
   user: AuthUser | null
+  isAdmin?: boolean
   teams?: Team[]
   onInvite: () => void
   onDonate: () => void
@@ -98,6 +101,17 @@ export function SiteHeader({
             Donate
           </Button>
           */}
+          {isAdmin && (
+            <Button
+              render={<a href="/admin/stats" />}
+              nativeButton={false}
+              variant="outline"
+              size="sm"
+            >
+              <BarChart3Icon className="size-4" />
+              Stats
+            </Button>
+          )}
           {user ? (
             <div className="flex items-center gap-2">
               <Avatar className="size-9 ring-1 ring-border">
@@ -168,6 +182,17 @@ export function SiteHeader({
               Donate to kids soccer
             </Button>
             */}
+            {isAdmin && (
+              <Button
+                render={<a href="/admin/stats" />}
+                nativeButton={false}
+                variant="outline"
+                className="justify-start"
+              >
+                <BarChart3Icon className="size-4" />
+                Stats
+              </Button>
+            )}
             {user ? (
               <form action={signOut}>
                 <Button

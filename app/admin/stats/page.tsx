@@ -11,8 +11,11 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { StatCard } from "@/components/admin/stat-card"
 import { BarChart } from "@/components/admin/stats-charts"
+import { RangeSelector } from "@/components/admin/range-selector"
 import { getAdminUser } from "@/lib/admin"
 import { getAppStats, getSiteStats } from "@/lib/stats"
+
+const ALLOWED_RANGES = [7, 30, 90]
 
 export const dynamic = "force-dynamic"
 
@@ -21,12 +24,23 @@ export const metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function AdminStatsPage() {
+export default async function AdminStatsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>
+}) {
   const admin = await getAdminUser()
   // Non-admins get a 404 so the page's existence isn't revealed.
   if (!admin) notFound()
 
-  const [site, app] = await Promise.all([getSiteStats(30), getAppStats(30)])
+  const { range } = await searchParams
+  const days = ALLOWED_RANGES.includes(Number(range)) ? Number(range) : 30
+  const rangeLabel = `last ${days} days`
+
+  const [site, app] = await Promise.all([
+    getSiteStats(days),
+    getAppStats(days),
+  ])
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl px-4 py-8">
@@ -38,10 +52,15 @@ export default async function AdminStatsPage() {
           <ArrowLeftIcon className="size-3.5" />
           Back to app
         </Link>
-        <h1 className="text-2xl font-bold text-foreground">Site Stats</h1>
-        <p className="text-sm text-muted-foreground">
-          First-party analytics · last 30 days · signed in as {admin.email}
-        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Site Stats</h1>
+            <p className="text-sm text-muted-foreground">
+              First-party analytics · {rangeLabel} · signed in as {admin.email}
+            </p>
+          </div>
+          <RangeSelector current={days} />
+        </div>
       </div>
 
       {/* Traffic */}
@@ -53,13 +72,13 @@ export default async function AdminStatsPage() {
           <StatCard
             label="Total views"
             value={site.totalViews}
-            hint="Last 30 days"
+            hint={rangeLabel}
             icon={EyeIcon}
           />
           <StatCard
             label="Unique visitors"
             value={site.totalVisitors}
-            hint="Last 30 days"
+            hint={rangeLabel}
             icon={UsersIcon}
           />
           <StatCard
@@ -84,7 +103,7 @@ export default async function AdminStatsPage() {
             <BarChart
               data={site.dailyViews}
               colorClass="bg-primary"
-              label="Daily page views over the last 30 days"
+              label={`Daily page views over the ${rangeLabel}`}
             />
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
@@ -94,7 +113,7 @@ export default async function AdminStatsPage() {
             <BarChart
               data={site.dailyVisitors}
               colorClass="bg-[var(--brand-green)]"
-              label="Daily unique visitors over the last 30 days"
+              label={`Daily unique visitors over the ${rangeLabel}`}
             />
           </div>
         </div>
@@ -170,7 +189,7 @@ export default async function AdminStatsPage() {
           <BarChart
             data={app.signupsByDay}
             colorClass="bg-[var(--brand-orange)]"
-            label="New signups per day over the last 30 days"
+            label={`New signups per day over the ${rangeLabel}`}
           />
         </div>
       </section>

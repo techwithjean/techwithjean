@@ -36,6 +36,7 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
 export function Dashboard({
   user,
+  isAdmin = false,
   initialPredictions,
   initialBracket,
   initialFavorite = null,
@@ -44,6 +45,7 @@ export function Dashboard({
   autoJoinedLeagueName = null,
 }: {
   user: AuthUser | null
+  isAdmin?: boolean
   initialPredictions: Record<string, SavedPrediction>
   initialBracket: Bracket
   initialFavorite?: string | null
@@ -208,6 +210,7 @@ export function Dashboard({
     <div className="min-h-dvh bg-background">
       <SiteHeader
         user={user}
+        isAdmin={isAdmin}
         teams={teamOptions}
         onInvite={() => setInviteOpen(true)}
         onDonate={() => setDonateOpen(true)}

@@ -5,6 +5,7 @@ import { getBracket, type Bracket } from "@/lib/football-data"
 import { finalResultsFromBracket, totalPointsByUser } from "@/lib/scoring"
 import type { AuthUser, SavedPrediction } from "@/lib/types"
 import type { LeagueWithStandings, StandingEntry } from "@/lib/leagues"
+import { isAdminEmail } from "@/lib/admin"
 
 export const dynamic = "force-dynamic"
 
@@ -26,6 +27,7 @@ export default async function Page() {
   } = await supabase.auth.getUser()
 
   let authUser: AuthUser | null = null
+  let isAdmin = false
   let initialFavorite: string | null = null
   let needsOnboarding = false
   let leagues: LeagueWithStandings[] = []
@@ -44,6 +46,7 @@ export default async function Page() {
       username: profile?.username ?? user.email?.split("@")[0] ?? "player",
     }
     initialFavorite = profile?.favorite_team ?? null
+    isAdmin = isAdminEmail(user.email)
     // No profile row or not yet onboarded → run first-login onboarding.
     needsOnboarding = !profile || !profile.onboarded
 
@@ -73,6 +76,7 @@ export default async function Page() {
   return (
     <Dashboard
       user={authUser}
+      isAdmin={isAdmin}
       initialPredictions={predictions}
       initialBracket={initialBracket}
       initialFavorite={initialFavorite}
