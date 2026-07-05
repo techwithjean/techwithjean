@@ -1,4 +1,5 @@
 import { Dashboard } from "@/components/dashboard"
+import { LandingPage } from "@/components/marketing/landing-page"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getBracket, type Bracket } from "@/lib/football-data"
@@ -10,6 +11,18 @@ import { isAdminEmail } from "@/lib/admin"
 export const dynamic = "force-dynamic"
 
 export default async function Page() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // Smart homepage: logged-out visitors get the public, crawlable marketing
+  // landing page (best for SEO); signed-in users get the app dashboard exactly
+  // as before. This keeps the app experience unchanged for existing users.
+  if (!user) {
+    return <LandingPage />
+  }
+
   let initialBracket: Bracket = {
     rounds: [],
     updatedAt: "",
@@ -21,11 +34,6 @@ export default async function Page() {
     console.log("[v0] Failed to load bracket:", (err as Error).message)
   }
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
   let authUser: AuthUser | null = null
   let isAdmin = false
   let initialFavorite: string | null = null
@@ -33,7 +41,7 @@ export default async function Page() {
   let leagues: LeagueWithStandings[] = []
   const predictions: Record<string, SavedPrediction> = {}
 
-  if (user) {
+  {
     const { data: profile } = await supabase
       .from("profiles")
       .select("username, favorite_team, onboarded")
