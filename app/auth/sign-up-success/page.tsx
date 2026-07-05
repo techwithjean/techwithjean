@@ -22,10 +22,11 @@ export default function Page() {
             then log in to start making your bracket predictions.
           </p>
           <p className="rounded-lg bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground text-pretty">
-            The email is sent by our secure email provider (Supabase) on behalf
-            of{" "}
-            <span className="font-medium text-foreground">myfinalscup.com</span>.
-            If you don&apos;t see it, check your spam folder.
+            The email comes from{" "}
+            <span className="font-medium text-foreground">
+              no-reply@myfinalscup.com
+            </span>
+            . If you don&apos;t see it, check your spam folder.
           </p>
           <Button
             render={<Link href="/auth/login" />}

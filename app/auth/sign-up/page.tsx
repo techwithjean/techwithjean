@@ -9,15 +9,6 @@ import { Label } from "@/components/ui/label"
 import { BrandLogo } from "@/components/brand-logo"
 import { GoogleSignInButton } from "@/components/google-sign-in-button"
 import { getAuthCallbackUrl } from "@/lib/auth-redirect"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { MailCheckIcon } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
@@ -29,7 +20,6 @@ function SignUpForm() {
   const [repeatPassword, setRepeatPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [showEmailReminder, setShowEmailReminder] = useState(false)
   const router = useRouter()
   const params = useSearchParams()
   const next = params.get("next") || "/"
@@ -58,9 +48,9 @@ function SignUpForm() {
         },
       })
       if (error) throw error
-      // Remind the user where the confirmation email comes from before moving on,
-      // so the "Supabase" sender doesn't look suspicious in their inbox.
-      setShowEmailReminder(true)
+      // The sign-up-success screen already tells the user to check their email,
+      // so send them straight there.
+      router.push("/auth/sign-up-success")
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
@@ -70,50 +60,6 @@ function SignUpForm() {
 
   return (
     <div className="w-full max-w-sm">
-      <Dialog
-        open={showEmailReminder}
-        onOpenChange={(open) => {
-          // Once the reminder is dismissed (button or overlay), continue to the
-          // success screen so the flow isn't interrupted.
-          if (!open) {
-            setShowEmailReminder(false)
-            router.push("/auth/sign-up-success")
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <MailCheckIcon className="h-6 w-6 text-primary" aria-hidden="true" />
-            </div>
-            <DialogTitle className="text-center">Check your email</DialogTitle>
-            <DialogDescription className="text-center leading-relaxed">
-              We just sent a confirmation link to{" "}
-              <span className="font-medium text-foreground">
-                {email || "your inbox"}
-              </span>
-              . For your security, it&apos;s delivered by our email provider{" "}
-              <span className="font-medium text-foreground">Supabase</span> on
-              behalf of{" "}
-              <span className="font-medium text-foreground">myfinalscup.com</span>
-              , so the sender may show as &quot;Supabase.&quot; That&apos;s
-              expected — open it (check spam too) to finish signing up.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              className="w-full"
-              onClick={() => {
-                setShowEmailReminder(false)
-                router.push("/auth/sign-up-success")
-              }}
-            >
-              Got it
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <div className="mb-8 flex flex-col items-center gap-4 text-center">
         <Link href="/">
           <BrandLogo className="text-3xl" />
@@ -183,11 +129,12 @@ function SignUpForm() {
           {isLoading ? "Creating account..." : "Sign up"}
         </Button>
         <p className="rounded-lg bg-muted/50 p-3 text-center text-xs leading-relaxed text-muted-foreground">
-          After you sign up, we&apos;ll send a confirmation link to your email to
-          verify your account. It comes from our secure email provider (Supabase)
-          on behalf of{" "}
-          <span className="font-medium text-foreground">myfinalscup.com</span> —
-          check your inbox (and spam folder) to finish signing up.
+          After you sign up, we&apos;ll send a confirmation link from{" "}
+          <span className="font-medium text-foreground">
+            no-reply@myfinalscup.com
+          </span>{" "}
+          to verify your account — check your inbox (and spam folder) to finish
+          signing up.
         </p>
         <p className="text-center text-sm text-muted-foreground">
           {"Already have an account? "}
