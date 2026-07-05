@@ -23,11 +23,16 @@ import {
   MailIcon,
   PencilIcon,
   LogOutIcon,
+  Trash2Icon,
+  ShieldCheckIcon,
 } from "lucide-react"
 import {
   createLeague,
   joinLeagueByCode,
   leaveLeague,
+  renameLeague,
+  deleteLeague,
+  transferOwnership,
 } from "@/app/actions/leagues"
 import { updateDisplayName } from "@/app/actions/profile"
 import type { LeagueWithStandings } from "@/lib/leagues"
@@ -64,10 +69,63 @@ export function Leaderboard({
   const [leaveBusy, setLeaveBusy] = useState(false)
   const [leaveError, setLeaveError] = useState<string | null>(null)
 
+  // Owner-only controls: rename, delete, transfer ownership.
+  const [editingLeagueName, setEditingLeagueName] = useState(false)
+  const [leagueNameDraft, setLeagueNameDraft] = useState("")
+  const [leagueNameBusy, setLeagueNameBusy] = useState(false)
+  const [ownerError, setOwnerError] = useState<string | null>(null)
+  const [promoteId, setPromoteId] = useState("")
+  const [promoteBusy, setPromoteBusy] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+
   const selected =
     leagues.find((l) => l.id === selectedId) ?? leagues[0] ?? null
 
   const you = selected?.members.find((m) => m.isYou) ?? null
+  const isOwner = !!you && !!selected && selected.ownerId === you.userId
+  const otherMembers =
+    selected?.members.filter((m) => m.userId !== selected.ownerId) ?? []
+
+  async function saveLeagueName(leagueId: string) {
+    setLeagueNameBusy(true)
+    setOwnerError(null)
+    const res = await renameLeague(leagueId, leagueNameDraft)
+    setLeagueNameBusy(false)
+    if (!res.ok) {
+      setOwnerError(res.error)
+      return
+    }
+    setEditingLeagueName(false)
+    router.refresh()
+  }
+
+  async function promoteMember(leagueId: string) {
+    setPromoteBusy(true)
+    setOwnerError(null)
+    const res = await transferOwnership(leagueId, promoteId)
+    setPromoteBusy(false)
+    if (!res.ok) {
+      setOwnerError(res.error)
+      return
+    }
+    setPromoteId("")
+    router.refresh()
+  }
+
+  async function doDeleteLeague(leagueId: string) {
+    setDeleteBusy(true)
+    setOwnerError(null)
+    const res = await deleteLeague(leagueId)
+    setDeleteBusy(false)
+    if (!res.ok) {
+      setOwnerError(res.error)
+      return
+    }
+    setConfirmDelete(false)
+    setSelectedId(null)
+    router.refresh()
+  }
 
   async function saveName() {
     setNameBusy(true)
@@ -303,6 +361,160 @@ export function Leaderboard({
           </div>
         </form>
       </div>
+
+      {isOwner && (
+        <div className="mt-4 flex flex-col gap-3 rounded-lg border border-border bg-secondary/30 p-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+            <ShieldCheckIcon className="size-3.5 text-primary" />
+            Owner controls
+          </div>
+
+          {/* Rename league */}
+          {editingLeagueName ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                saveLeagueName(selected.id)
+              }}
+              className="flex items-center gap-2"
+            >
+              <Input
+                value={leagueNameDraft}
+                onChange={(e) => setLeagueNameDraft(e.target.value)}
+                maxLength={60}
+                placeholder="League name"
+                autoFocus
+                className="flex-1"
+              />
+              <Button
+                type="submit"
+                size="sm"
+                disabled={leagueNameBusy || !leagueNameDraft.trim()}
+              >
+                {leagueNameBusy ? "Saving..." : "Save"}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setEditingLeagueName(false)}
+                disabled={leagueNameBusy}
+              >
+                Cancel
+              </Button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setLeagueNameDraft(selected.name)
+                setOwnerError(null)
+                setEditingLeagueName(true)
+              }}
+              className="flex items-center gap-1.5 self-start text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              <PencilIcon className="size-3.5" />
+              Edit league name
+            </button>
+          )}
+
+          {/* Promote another member to owner */}
+          {otherMembers.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Select
+                value={promoteId}
+                onValueChange={(v) => setPromoteId(v ?? "")}
+              >
+                <SelectTrigger className="h-9 flex-1 text-xs">
+                  <SelectValue placeholder="Promote a member to owner…">
+                    {(value: string) =>
+                      otherMembers.find((m) => m.userId === value)?.username ??
+                      "Promote a member to owner…"
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {otherMembers.map((m) => (
+                    <SelectItem key={m.userId} value={m.userId}>
+                      {m.username.trim()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => promoteMember(selected.id)}
+                disabled={promoteBusy || !promoteId}
+              >
+                {promoteBusy ? "Promoting..." : "Promote"}
+              </Button>
+            </div>
+          )}
+
+          {/* Delete league with a member-aware warning */}
+          {confirmDelete ? (
+            <div className="flex flex-col gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5">
+              <p className="text-xs text-foreground">
+                {otherMembers.length > 0 ? (
+                  <>
+                    This will permanently delete{" "}
+                    <span className="font-semibold">{selected.name}</span> and
+                    remove all{" "}
+                    <span className="font-semibold">
+                      {selected.members.length} members
+                    </span>
+                    . This can&apos;t be undone.
+                  </>
+                ) : (
+                  <>
+                    This will permanently delete{" "}
+                    <span className="font-semibold">{selected.name}</span>. This
+                    can&apos;t be undone.
+                  </>
+                )}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => doDeleteLeague(selected.id)}
+                  disabled={deleteBusy}
+                >
+                  {deleteBusy ? "Deleting..." : "Delete permanently"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={deleteBusy}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setOwnerError(null)
+                setConfirmDelete(true)
+              }}
+              className="flex items-center gap-1.5 self-start text-xs font-medium text-destructive hover:opacity-80"
+            >
+              <Trash2Icon className="size-3.5" />
+              Delete league
+            </button>
+          )}
+
+          {ownerError && (
+            <p className="text-xs text-destructive">{ownerError}</p>
+          )}
+        </div>
+      )}
 
       {isAuthed && (
         <div className="mt-4 flex flex-col gap-2 border-t border-border pt-3">

@@ -167,6 +167,120 @@ export async function leaveLeague(
 }
 
 /**
+ * Verify the current user owns the given league. Returns the auth'd user id
+ * and a service-role client on success, or an error result otherwise.
+ */
+async function requireOwner(
+  leagueId: string,
+): Promise<
+  | { ok: true; userId: string; admin: ReturnType<typeof createAdminClient> }
+  | { ok: false; error: string }
+> {
+  if (!leagueId) return { ok: false, error: "Missing league." }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: "You must be signed in." }
+
+  const admin = createAdminClient()
+  const { data: league } = await admin
+    .from("leagues")
+    .select("owner_id")
+    .eq("id", leagueId)
+    .maybeSingle()
+  if (!league) return { ok: false, error: "League not found." }
+  if (league.owner_id !== user.id) {
+    return { ok: false, error: "Only the league owner can do that." }
+  }
+
+  return { ok: true, userId: user.id, admin }
+}
+
+/** Rename a league. Owner only. */
+export async function renameLeague(
+  leagueId: string,
+  name: string,
+): Promise<ActionResult> {
+  const trimmed = name.trim()
+  if (trimmed.length < 1 || trimmed.length > 60) {
+    return { ok: false, error: "League name must be 1-60 characters." }
+  }
+
+  const auth = await requireOwner(leagueId)
+  if (!auth.ok) return auth
+
+  const { error } = await auth.admin
+    .from("leagues")
+    .update({ name: trimmed })
+    .eq("id", leagueId)
+  if (error) return { ok: false, error: "Could not rename the league." }
+
+  revalidatePath("/")
+  return { ok: true }
+}
+
+/**
+ * Permanently delete a league and all its memberships. Owner only. The UI
+ * warns the owner when other members will be affected.
+ */
+export async function deleteLeague(
+  leagueId: string,
+): Promise<ActionResult> {
+  const auth = await requireOwner(leagueId)
+  if (!auth.ok) return auth
+
+  // Remove memberships first, then the league itself.
+  await auth.admin.from("league_members").delete().eq("league_id", leagueId)
+  const { error } = await auth.admin
+    .from("leagues")
+    .delete()
+    .eq("id", leagueId)
+  if (error) return { ok: false, error: "Could not delete the league." }
+
+  revalidatePath("/")
+  return { ok: true }
+}
+
+/**
+ * Transfer league ownership to another member ("promote to admin/owner").
+ * Owner only. The new owner must already be a member of the league.
+ */
+export async function transferOwnership(
+  leagueId: string,
+  newOwnerId: string,
+): Promise<ActionResult> {
+  if (!newOwnerId) return { ok: false, error: "Choose a member to promote." }
+
+  const auth = await requireOwner(leagueId)
+  if (!auth.ok) return auth
+  if (newOwnerId === auth.userId) {
+    return { ok: false, error: "You already own this league." }
+  }
+
+  // Confirm the target is a member of this league.
+  const { data: membership } = await auth.admin
+    .from("league_members")
+    .select("user_id")
+    .eq("league_id", leagueId)
+    .eq("user_id", newOwnerId)
+    .maybeSingle()
+  if (!membership) {
+    return { ok: false, error: "That person is not in this league." }
+  }
+
+  const { error } = await auth.admin
+    .from("leagues")
+    .update({ owner_id: newOwnerId })
+    .eq("id", leagueId)
+  if (error) return { ok: false, error: "Could not transfer ownership." }
+
+  revalidatePath("/")
+  return { ok: true }
+}
+
+/**
  * Finalize first-login onboarding: upsert the profile (creating the row if it
  * doesn't exist yet — e.g. for Google sign-ins) with the chosen favorite team
  * and mark the user as onboarded so the dialog doesn't show again.
