@@ -57,6 +57,7 @@ export default async function Page() {
   let authUser: AuthUser | null = null
   let isAdmin = false
   let initialFavorite: string | null = null
+  let preferredTheme: "light" | "dark" | null = null
   let needsOnboarding = false
   let leagues: LeagueWithStandings[] = []
   const predictions: Record<string, SavedPrediction> = {}
@@ -64,7 +65,7 @@ export default async function Page() {
   {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("username, favorite_team, onboarded")
+      .select("username, favorite_team, onboarded, theme_preference")
       .eq("id", user.id)
       .maybeSingle()
 
@@ -74,6 +75,11 @@ export default async function Page() {
       username: profile?.username ?? user.email?.split("@")[0] ?? "player",
     }
     initialFavorite = profile?.favorite_team ?? null
+    preferredTheme =
+      profile?.theme_preference === "light" ||
+      profile?.theme_preference === "dark"
+        ? profile.theme_preference
+        : null
     isAdmin = isAdminEmail(user.email)
     // No profile row or not yet onboarded → run first-login onboarding.
     needsOnboarding = !profile || !profile.onboarded
@@ -108,6 +114,7 @@ export default async function Page() {
       initialPredictions={predictions}
       initialBracket={initialBracket}
       initialFavorite={initialFavorite}
+      preferredTheme={preferredTheme}
       leagues={leagues}
       needsOnboarding={needsOnboarding}
       autoJoinedLeagueName={autoJoinedLeagueName}

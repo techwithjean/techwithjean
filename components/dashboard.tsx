@@ -15,6 +15,8 @@ import { SiteHeader } from "@/components/site-header"
 import { VideoHero } from "@/components/video-hero"
 import { BracketView } from "@/components/bracket-view"
 import { FavoriteTeamProvider } from "@/components/favorite-team-context"
+import { ThemeSync } from "@/components/theme-sync"
+import type { Theme } from "@/app/actions/theme"
 import { PredictionCard } from "@/components/prediction-card"
 import { Leaderboard } from "@/components/leaderboard"
 import { OnboardingDialog } from "@/components/onboarding-dialog"
@@ -40,6 +42,7 @@ export function Dashboard({
   initialPredictions,
   initialBracket,
   initialFavorite = null,
+  preferredTheme = null,
   leagues = [],
   needsOnboarding = false,
   autoJoinedLeagueName = null,
@@ -50,6 +53,8 @@ export function Dashboard({
   initialPredictions: Record<string, SavedPrediction>
   initialBracket: Bracket
   initialFavorite?: string | null
+  /** The signed-in user's saved theme, applied on login. */
+  preferredTheme?: Theme | null
   leagues?: LeagueWithStandings[]
   needsOnboarding?: boolean
   autoJoinedLeagueName?: string | null
@@ -215,6 +220,7 @@ export function Dashboard({
       canPersist={!!user}
     >
     <div className="min-h-dvh bg-background">
+      <ThemeSync preferredTheme={preferredTheme} />
       <SiteHeader
         user={user}
         isAdmin={isAdmin}

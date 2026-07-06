@@ -88,7 +88,7 @@ export function SiteHeader({
         {/* Desktop controls */}
         <div className="hidden items-center gap-2 md:flex">
           {teamControl}
-          <ThemeToggle />
+          <ThemeToggle canPersist={!!user} />
           <Button variant="outline" size="sm" onClick={onInvite}>
             <UserPlusIcon className="size-4" />
             Invite Friends
@@ -147,7 +147,7 @@ export function SiteHeader({
 
         {/* Mobile trigger */}
         <div className="flex items-center gap-2 md:hidden">
-          <ThemeToggle variant="ghost" />
+          <ThemeToggle variant="ghost" canPersist={!!user} />
           {user && (
             <Avatar className="size-9 ring-1 ring-border">
               <AvatarFallback className="bg-primary/15 text-primary">

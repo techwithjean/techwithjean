@@ -5,13 +5,17 @@ import { MoonIcon, SunIcon } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { saveThemePreference } from "@/app/actions/theme"
 
 export function ThemeToggle({
   className,
   variant = "outline",
+  canPersist = false,
 }: {
   className?: string
   variant?: "outline" | "ghost"
+  /** When true, the chosen theme is saved to the signed-in user's profile. */
+  canPersist?: boolean
 }) {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -27,13 +31,21 @@ export function ThemeToggle({
       ? "Switch to light mode"
       : "Switch to dark mode"
 
+  function toggle() {
+    const next = isDark ? "light" : "dark"
+    setTheme(next)
+    // Persist the choice for signed-in users so it follows them across devices.
+    // Fire-and-forget: the local switch already happened optimistically.
+    if (canPersist) void saveThemePreference(next)
+  }
+
   return (
     <Button
       variant={variant}
       size="icon"
       className={cn(className)}
       aria-label={label}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={toggle}
     >
       {mounted && isDark ? (
         <SunIcon className="size-4" />
