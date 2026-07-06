@@ -118,6 +118,98 @@ function mapFixture(f: ApiFixture): Match {
   }
 }
 
+// Knockout rounds in bracket order — used to advance winners into the next round.
+const KNOCKOUT_ORDER = ["r32", "r16", "qf", "sf", "final"]
+
+/** Our internal round id for a fixture, or undefined for non-knockout rounds. */
+function fixtureRoundId(f: ApiFixture): string | undefined {
+  return ROUND_MAP[normalizeRound(f.league.round)]?.id
+}
+
+function isFixtureFinished(f: ApiFixture): boolean {
+  return FINAL_CODES.has(f.fixture.status.short) || finalFixtureIds.has(f.fixture.id)
+}
+
+/** The winning team of a finished fixture (respects extra time / penalties). */
+function fixtureWinner(f: ApiFixture): ApiTeam | null {
+  if (!isFixtureFinished(f)) return null
+  const { home, away } = f.teams
+  if (home.winner === true) return home
+  if (away.winner === true) return away
+  // Fall back to goals if the winner flag is missing.
+  const { home: hg, away: ag } = f.goals
+  if (hg != null && ag != null) {
+    if (hg > ag) return home
+    if (ag > hg) return away
+  }
+  return null
+}
+
+/**
+ * API-Football fills a next-round fixture's teams only once its own record is
+ * updated, which lags behind the final whistle of the feeder matches. We
+ * resolve advancement ourselves so a winner (e.g. Norway beating Brazil) drops
+ * into the next round immediately.
+ *
+ * Within a round, fixtures are paired by consecutive id `(lo, hi)`; that pair
+ * feeds one next-round fixture. We fill an empty next-round slot two ways:
+ *   1. If the API has already placed one team, use it to identify the feeder
+ *      pair, then fill the remaining slot from that pair's other winner.
+ *   2. If the slot is completely empty (the sibling match hasn't been played
+ *      yet), fall back to positional mapping — pair k feeds next[k] — so a
+ *      winner still advances before its future opponent is decided.
+ * We never overwrite a team the API already provides, and never duplicate a
+ * team that is already in the fixture.
+ */
+function resolveAdvancement(fixtures: ApiFixture[]): void {
+  for (let i = 0; i < KNOCKOUT_ORDER.length - 1; i++) {
+    const prev = fixtures
+      .filter((f) => fixtureRoundId(f) === KNOCKOUT_ORDER[i])
+      .sort((a, b) => a.fixture.id - b.fixture.id)
+    const next = fixtures
+      .filter((f) => fixtureRoundId(f) === KNOCKOUT_ORDER[i + 1])
+      .sort((a, b) => a.fixture.id - b.fixture.id)
+    if (prev.length === 0 || next.length === 0) continue
+
+    // Consecutive-id feeder pairs: [lo, hi].
+    const pairs: [ApiFixture, ApiFixture][] = []
+    for (let j = 0; j + 1 < prev.length; j += 2) {
+      pairs.push([prev[j], prev[j + 1]])
+    }
+    // Positional mapping is only trusted when pairs line up 1:1 with the next
+    // round (a well-formed bracket, e.g. 16 R32 → 8 R16 → 4 QF).
+    const aligned = pairs.length === next.length
+
+    for (let k = 0; k < next.length; k++) {
+      const nf = next[k]
+      const presentIds = new Set(
+        [nf.teams.home.id, nf.teams.away.id].filter((x): x is number => x != null),
+      )
+      if (presentIds.size === 2) continue // already full
+
+      // 1. Identify the feeder pair from a team the API already placed…
+      let pair = pairs.find(([lo, hi]) => {
+        const ids = [fixtureWinner(lo)?.id, fixtureWinner(hi)?.id]
+        return [...presentIds].some((id) => ids.includes(id))
+      })
+      // 2. …otherwise, for a completely empty slot, use positional mapping.
+      if (!pair && presentIds.size === 0 && aligned) pair = pairs[k]
+      if (!pair) continue
+
+      const [lo, hi] = pair
+      const toPlace = [fixtureWinner(lo), fixtureWinner(hi)].filter(
+        (w): w is ApiTeam => w != null && w.id != null && !presentIds.has(w.id),
+      )
+      if (nf.teams.home.id == null && toPlace.length) {
+        nf.teams.home = toPlace.shift()!
+      }
+      if (nf.teams.away.id == null && toPlace.length) {
+        nf.teams.away = toPlace.shift()!
+      }
+    }
+  }
+}
+
 /**
  * Fetch the knockout bracket from API-Football and map it onto the app's
  * Round/Match model. Throws on missing key, HTTP error, rate limit, or an empty
@@ -152,6 +244,10 @@ export async function fetchApiFootballBracket(): Promise<Bracket> {
   }
 
   const fixtures = data.response ?? []
+
+  // Advance winners into the next round ourselves, since API-Football lags in
+  // filling next-round fixtures after a feeder match's final whistle.
+  resolveAdvancement(fixtures)
 
   // Keep only knockout-stage fixtures (drops group stage & 3rd-place).
   const buckets = new Map<string, Match[]>()
