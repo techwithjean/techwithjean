@@ -12,16 +12,21 @@ function matchHasFavorite(m: Match, favorite: string | null) {
   return m.a.team?.name === favorite || m.b.team?.name === favorite
 }
 
-/** Calendar-day bucket (UTC midnight ms) for a match's kickoff. */
+/**
+ * Calendar-day bucket for a match's kickoff, in the viewer's LOCAL timezone.
+ * Using local (not UTC) days is essential: a game played at ~8pm local
+ * yesterday can fall on a different UTC date than a game kicking off ~8pm local
+ * today, which would otherwise mis-bucket "yesterday" and "today".
+ */
 function dayKey(m: Match) {
   const d = new Date(m.kickoffISO)
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
 }
 
-/** Today's calendar-day bucket, using the same UTC basis as dayKey. */
+/** Today's calendar-day bucket, using the same local basis as dayKey. */
 function todayKey() {
   const now = new Date()
-  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
 }
 
 /**
