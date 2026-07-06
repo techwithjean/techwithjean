@@ -32,37 +32,46 @@ function isPlayed(m: Match) {
   return m.status === "final"
 }
 
-/**
- * Top-level group. Lower value sorts first:
- *   1 → today's games (not yet in the past-played bucket)
- *   2 → future dates that have not been played yet
- *   3 → already-played (FT) games from earlier days
- */
-function groupTier(m: Match, today: number) {
-  const day = dayKey(m)
-  // Finished games from an earlier day are "already played" → bottom bucket.
-  if (isPlayed(m) && day < today) return 3
-  if (day < today) return 3 // any lingering past-day game also sinks to bottom
-  if (day === today) return 1 // today
-  return 2 // future
+/** A game currently in progress (or delayed but under way). */
+function isLiveNow(m: Match) {
+  return m.status === "live" || m.status === "delayed"
 }
 
 /**
- * Ordering within today's bucket. Live (and delayed-live) games sit above
- * upcoming ones, and finished (FT) games for today sit last.
+ * Top-level group. Lower value sorts first:
+ *   0 → live games (in progress) — always first, regardless of calendar day
+ *   1 → today's games that are not live yet
+ *   2 → future dates that have not been played yet
+ *   3 → already-played (FT) games (past days, or lingering past-day games)
+ */
+function groupTier(m: Match, today: number) {
+  // Live games float to the very top even if they started on a prior day
+  // (e.g. a delayed or late-running fixture that crossed midnight).
+  if (isLiveNow(m)) return 0
+  const day = dayKey(m)
+  if (day === today) return 1 // today (upcoming or finished-today)
+  if (isPlayed(m)) return 3 // already played (FT)
+  if (day < today) return 3 // any lingering past-day game also sinks to bottom
+  return 2 // future, not yet played
+}
+
+/**
+ * Ordering within today's (non-live) bucket. Upcoming games sit above
+ * finished (FT) games, so games played earlier today drop to the end of the
+ * day.
  */
 function todayStatusTier(m: Match) {
-  if (m.status === "live" || m.status === "delayed") return 0
-  if (m.status === "upcoming") return 1
-  return 2 // final (FT) played earlier today
+  if (m.status === "upcoming") return 0
+  return 1 // final (FT) played earlier today
 }
 
 /**
  * Order matches top-to-bottom:
  *   1. the favorite team's match floats to the very top.
- *   2. today's games first — live ahead of upcoming, with FT (today) last.
- *   3. then all other future dates that haven't been played, earliest first.
- *   4. finally, already-played (FT) games from past days, most recent first.
+ *   2. live games next (in progress), earliest kickoff first.
+ *   3. today's remaining games ascending, with FT (today) at the end of the day.
+ *   4. then all other future dates that haven't been played, earliest first.
+ *   5. finally, already-played (FT) games, most recent day/kickoff first.
  */
 function orderMatches(matches: Match[], favorite: string | null) {
   const today = todayKey()
@@ -74,21 +83,19 @@ function orderMatches(matches: Match[], favorite: string | null) {
       const bFav = matchHasFavorite(b.m, favorite)
       if (aFav !== bFav) return aFav ? -1 : 1
 
-      // 2. Top-level grouping: today → future → past-played.
+      // 2. Top-level grouping: live → today → future → past-played.
       const tierA = groupTier(a.m, today)
       const tierB = groupTier(b.m, today)
       if (tierA !== tierB) return tierA - tierB
 
-      // 3. Past-played bucket: most recent day first, latest kickoff first.
-      if (tierA === 3) {
-        const dayDiff = dayKey(b.m) - dayKey(a.m)
-        if (dayDiff !== 0) return dayDiff
-        const diff = Date.parse(b.m.kickoffISO) - Date.parse(a.m.kickoffISO)
+      // 3. Live bucket: earliest kickoff first.
+      if (tierA === 0) {
+        const diff = Date.parse(a.m.kickoffISO) - Date.parse(b.m.kickoffISO)
         if (diff !== 0) return diff
         return a.i - b.i
       }
 
-      // 4. Today's bucket: live ahead of upcoming, FT last, then by kickoff.
+      // 4. Today's bucket: upcoming ahead of FT, then by kickoff ascending.
       if (tierA === 1) {
         const statusDiff = todayStatusTier(a.m) - todayStatusTier(b.m)
         if (statusDiff !== 0) return statusDiff
@@ -97,7 +104,16 @@ function orderMatches(matches: Match[], favorite: string | null) {
         return a.i - b.i
       }
 
-      // 5. Future bucket: earliest day/kickoff first.
+      // 5. Past-played bucket: most recent day first, latest kickoff first.
+      if (tierA === 3) {
+        const dayDiff = dayKey(b.m) - dayKey(a.m)
+        if (dayDiff !== 0) return dayDiff
+        const diff = Date.parse(b.m.kickoffISO) - Date.parse(a.m.kickoffISO)
+        if (diff !== 0) return diff
+        return a.i - b.i
+      }
+
+      // 6. Future bucket: earliest day/kickoff first.
       const dayDiff = dayKey(a.m) - dayKey(b.m)
       if (dayDiff !== 0) return dayDiff
       const diff = Date.parse(a.m.kickoffISO) - Date.parse(b.m.kickoffISO)
