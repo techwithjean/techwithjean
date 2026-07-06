@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono, Pacifico } from 'next/font/google'
+import { ThemeProvider } from '@/components/theme-provider'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { InstallPrompt } from '@/components/install-prompt'
 import { VisitTracker } from '@/components/visit-tracker'
@@ -112,8 +113,11 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'dark',
-  themeColor: '#0b0f1a',
+  colorScheme: 'dark light',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0b0f1a' },
+  ],
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -127,6 +131,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} bg-background`}
     >
       <body className="font-sans antialiased">
@@ -168,12 +173,19 @@ export default function RootLayout({
             }),
           }}
         />
-        {children}
-        <ServiceWorkerRegister />
-        <InstallPrompt />
-        {process.env.NODE_ENV === 'production' && <Analytics />}
-        {process.env.NODE_ENV === 'production' && <SpeedInsights />}
-        {process.env.NODE_ENV === 'production' && <VisitTracker />}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <ServiceWorkerRegister />
+          <InstallPrompt />
+          {process.env.NODE_ENV === 'production' && <Analytics />}
+          {process.env.NODE_ENV === 'production' && <SpeedInsights />}
+          {process.env.NODE_ENV === 'production' && <VisitTracker />}
+        </ThemeProvider>
       </body>
     </html>
   )

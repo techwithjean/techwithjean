@@ -54,7 +54,49 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Light theme (default `:root`) — clean white surfaces with the brand accent. */
 :root {
+  color-scheme: light;
+  --background: oklch(0.99 0.003 250);
+  --foreground: oklch(0.2 0.02 264);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.02 264);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.02 264);
+  --primary: oklch(0.55 0.19 255);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.005 264);
+  --secondary-foreground: oklch(0.24 0.02 264);
+  --muted: oklch(0.96 0.005 264);
+  --muted-foreground: oklch(0.48 0.02 264);
+  --accent: oklch(0.68 0.17 47);
+  --accent-foreground: oklch(0.2 0.02 50);
+  --destructive: oklch(0.58 0.24 27);
+  --border: oklch(0 0 0 / 10%);
+  --input: oklch(0 0 0 / 12%);
+  --ring: oklch(0.55 0.19 255);
+  --brand-yellow: oklch(0.72 0.15 78);
+  --brand-red: oklch(0.58 0.24 27);
+  --brand-orange: oklch(0.64 0.18 47);
+  --brand-blue: oklch(0.55 0.18 255);
+  --brand-green: oklch(0.52 0.15 150);
+  --chart-1: oklch(0.55 0.19 255);
+  --chart-2: oklch(0.64 0.18 47);
+  --chart-3: oklch(0.72 0.15 78);
+  --chart-4: oklch(0.58 0.24 27);
+  --chart-5: oklch(0.58 0.12 180);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.2 0.02 264);
+  --sidebar-primary: oklch(0.55 0.19 255);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.96 0.005 264);
+  --sidebar-accent-foreground: oklch(0.24 0.02 264);
+  --sidebar-border: oklch(0 0 0 / 10%);
+  --sidebar-ring: oklch(0.55 0.19 255);
+}
+
+/* Dark theme — the original deep-navy palette. */
+.dark {
   color-scheme: dark;
   --background: oklch(0.16 0.018 264);
   --foreground: oklch(0.97 0.005 250);

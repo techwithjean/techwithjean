@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { BrandLogo } from "@/components/brand-logo"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Flag } from "@/components/flag"
 import { favoriteTeams, type Team } from "@/lib/tournament-data"
 import { useFavoriteTeam } from "@/components/favorite-team-context"
@@ -87,6 +88,7 @@ export function SiteHeader({
         {/* Desktop controls */}
         <div className="hidden items-center gap-2 md:flex">
           {teamControl}
+          <ThemeToggle />
           <Button variant="outline" size="sm" onClick={onInvite}>
             <UserPlusIcon className="size-4" />
             Invite Friends
@@ -145,6 +147,7 @@ export function SiteHeader({
 
         {/* Mobile trigger */}
         <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle variant="ghost" />
           {user && (
             <Avatar className="size-9 ring-1 ring-border">
               <AvatarFallback className="bg-primary/15 text-primary">
