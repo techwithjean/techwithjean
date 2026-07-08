@@ -21,9 +21,10 @@ const NON_WC_EXCLUDE =
 const HIGHLIGHT_SIGNAL =
   /highlights|game.?winner|scores?|brace|hat.?trick|golazo|goal|stunner|winner|moves on|sends|advance|knocked out|\bvs\.?\b|\d+\s*-\s*\d+|penalt|free.?kick|equali[sz]er/i
 const STUDIO_EXCLUDE =
-  /reaction|compare|is it fair|race between|getting to watch|stand by|introducing|who would|debate|analysis|breakdown|preview|press conference|interview|explained|\btalk\b|q&a|mailbag|power ranking|predict/i
+  /reaction|compare|is it fair|race between|getting to watch|stand by|introducing|who would|debate|analysis|breakdown|preview|press conference|interview|explained|\btalk\b|q&a|mailbag|power ranking|predict|on this day|throwback|years? ago|\bclassic\b|20(?:0\d|1\d)\b/i
 
-const MAX_CLIPS = 8
+// Total reel size: 1 featured intro + 5 latest clips.
+const MAX_CLIPS = 6
 
 function decodeEntities(s: string): string {
   return s
@@ -158,38 +159,56 @@ async function buildClips(): Promise<HighlightClip[]> {
     (e) => WC_INCLUDE.test(e.title) && !NON_WC_EXCLUDE.test(e.title),
   )
 
-  // Prefer real match action; if that's too thin, relax to any non-studio WC clip.
-  const strong = wcEntries.filter(
+  // Real match action (goals, results) vs. other non-studio WC clips (toasts,
+  // "on this day", hype, etc.). We build the reel deliberately: mostly recent
+  // matches, plus at most one non-match item so the feed still feels live.
+  const matchEntries = wcEntries.filter(
     (e) => HIGHLIGHT_SIGNAL.test(e.title) && !STUDIO_EXCLUDE.test(e.title),
   )
-  const relaxed = wcEntries.filter((e) => !STUDIO_EXCLUDE.test(e.title))
-  const chosen = strong.length >= 3 ? strong : relaxed.length > 0 ? relaxed : wcEntries
+  const otherEntries = wcEntries.filter(
+    (e) => !HIGHLIGHT_SIGNAL.test(e.title) && !STUDIO_EXCLUDE.test(e.title),
+  )
+
+  const toClip = (e: FeedEntry): HighlightClip => ({
+    youtubeId: e.youtubeId,
+    category: categorizeClip(e.title),
+    title: e.title,
+    meta: formatMeta(e.published),
+  })
 
   // Self-hosted "Featured" clips (e.g. the branded intro) always lead the reel.
   const featured = curatedClips.filter((c) => c.videoSrc)
-
   const seen = new Set<string>()
-  const clips: HighlightClip[] = [...featured]
-  for (const e of chosen) {
+
+  // Recent match clips: live feed first (newest), then top up from curated.
+  const matchClips: HighlightClip[] = []
+  for (const e of matchEntries) {
     if (seen.has(e.youtubeId)) continue
     seen.add(e.youtubeId)
-    clips.push({
-      youtubeId: e.youtubeId,
-      category: categorizeClip(e.title),
-      title: e.title,
-      meta: formatMeta(e.published),
-    })
-    if (clips.length >= MAX_CLIPS) break
+    matchClips.push(toClip(e))
   }
-
-  // Live match highlights are sparse early in the tournament, so top up the
-  // reel with curated YouTube clips (deduped) to keep a full rotation.
   for (const c of curatedClips) {
-    if (clips.length >= MAX_CLIPS) break
     if (!c.youtubeId || seen.has(c.youtubeId)) continue
     seen.add(c.youtubeId)
-    clips.push(c)
+    matchClips.push(c)
   }
+
+  // At most one non-match item (the newest), to keep the reel feeling live.
+  const NON_MATCH_LIMIT = 1
+  const nonMatchClips: HighlightClip[] = []
+  for (const e of otherEntries) {
+    if (nonMatchClips.length >= NON_MATCH_LIMIT) break
+    if (seen.has(e.youtubeId)) continue
+    seen.add(e.youtubeId)
+    nonMatchClips.push(toClip(e))
+  }
+
+  // Fill the 5 non-featured slots: reserve one for the non-match item, the
+  // rest go to recent matches.
+  const slots = MAX_CLIPS - featured.length
+  const nonMatchPick = nonMatchClips.slice(0, NON_MATCH_LIMIT)
+  const matchPick = matchClips.slice(0, Math.max(0, slots - nonMatchPick.length))
+  const clips: HighlightClip[] = [...featured, ...matchPick, ...nonMatchPick]
 
   // If filtering left us empty (e.g. off-season), fall back to curated clips.
   return clips.length > 0 ? clips : curatedClips

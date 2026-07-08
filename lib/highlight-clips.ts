@@ -47,18 +47,6 @@ export const curatedClips: HighlightClip[] = [
     title: "USA vs Belgium",
     meta: "Round of 16 · Official recap",
   },
-  {
-    youtubeId: "QgUSOlN0Tt0",
-    category: "Goal of the Day",
-    title: "Brazil vs Japan",
-    meta: "Round of 32 · Official highlights",
-  },
-  {
-    youtubeId: "II84TKpzJY4",
-    category: "Upset",
-    title: "France vs Sweden",
-    meta: "Round of 32 · Official highlights",
-  },
 ]
 
 /** Infer a display category from a video title. */
