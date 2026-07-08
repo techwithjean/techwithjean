@@ -30,6 +30,12 @@ export const curatedClips: HighlightClip[] = [
     meta: "Your 2026 Finals Cup knockout hub",
   },
   {
+    youtubeId: "ut3NaRL855g",
+    category: "Upset",
+    title: "Switzerland vs Colombia",
+    meta: "Round of 16 · Official highlights",
+  },
+  {
     youtubeId: "QgUSOlN0Tt0",
     category: "Goal of the Day",
     title: "Brazil vs Japan",
