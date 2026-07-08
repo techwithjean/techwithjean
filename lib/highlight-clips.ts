@@ -33,7 +33,19 @@ export const curatedClips: HighlightClip[] = [
     youtubeId: "ut3NaRL855g",
     category: "Upset",
     title: "Switzerland vs Colombia",
-    meta: "Round of 16 · Official highlights",
+    meta: "Round of 16 · Penalty shootout",
+  },
+  {
+    youtubeId: "883Ok-Ehso4",
+    category: "Upset",
+    title: "Argentina vs Egypt",
+    meta: "Round of 16 · 3-2 comeback",
+  },
+  {
+    youtubeId: "QKhdH2c4gSs",
+    category: "Upset",
+    title: "USA vs Belgium",
+    meta: "Round of 16 · Official recap",
   },
   {
     youtubeId: "QgUSOlN0Tt0",
@@ -46,18 +58,6 @@ export const curatedClips: HighlightClip[] = [
     category: "Upset",
     title: "France vs Sweden",
     meta: "Round of 32 · Official highlights",
-  },
-  {
-    youtubeId: "rPebJKCPjK0",
-    category: "Upset",
-    title: "Ivory Coast vs Norway",
-    meta: "Round of 32 · Official highlights",
-  },
-  {
-    youtubeId: "m4x9IwGx3yU",
-    category: "Best Moments",
-    title: "Best Moments — Matchday Three",
-    meta: "Group stage · Official recap",
   },
 ]
 
